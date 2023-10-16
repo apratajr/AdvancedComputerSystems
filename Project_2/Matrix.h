@@ -3,10 +3,8 @@
 // desc: ACS Project 2 Matrix Class Header
 // auth: Andrew Prata
 //
-// This program performs matrix-matrix multiplication.
-// It includes three optimization options for this
-// operation. These are: multithreading, SIMD, and
-// cache usage optimization.
+// This header file contains the Matrix class
+// and the accompanying helpers.
 //
 
 #define size_t unsigned int // Matrix indices = nonnegative integers
