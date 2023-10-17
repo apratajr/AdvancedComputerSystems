@@ -66,6 +66,7 @@ Matrix<T> naiveMultiply(Matrix<T>& A, Matrix<T>& B) {
     Matrix<T> result(rowsA, colsB);
 
     for (size_t i = 0; i < rowsA; ++i) {
+        // printf("row: %d\r", i);
         for (size_t j = 0; j < colsB; ++j) {
             T sum = 0;
             for (size_t k = 0; k < colsA; ++k) {
@@ -73,6 +74,52 @@ Matrix<T> naiveMultiply(Matrix<T>& A, Matrix<T>& B) {
             }
             result(i, j) = sum;
         }
+    }
+
+    return result;
+}
+
+// Function to multiply a specific portion of the matrices
+template <typename T>
+void multiplyPartial(
+    Matrix<T>& A, Matrix<T>& B, Matrix<T>& C, size_t startRow, size_t endRow) {
+    for (size_t i = startRow; i < endRow; ++i) {
+        for (size_t j = 0; j < B.numCols(); ++j) {
+            C(i, j) = 0;
+            for (size_t k = 0; k < A.numCols(); ++k) {
+                C(i, j) += A(i, k) * B(k, j);
+            }
+        }
+    }
+}
+
+// Function to perform matrix multiplication using multithreading
+template <typename T>
+Matrix<T> multiplyMatricesMultithreaded(Matrix<T>& A, Matrix<T>& B) {
+    if (A.numCols() != B.numRows()) {
+        throw std::invalid_argument("Matrix dimensions are not compatible for multiplication");
+    }
+
+    size_t numRowsA = A.numRows();
+    size_t numRowsB = B.numRows();
+    size_t numColsB = B.numCols();
+
+    // Create a result matrix of appropriate size
+    Matrix<T> result(numRowsA, numColsB);
+
+    // Determine the number of threads to use (you can adjust this as needed)
+    size_t numThreads = std::thread::hardware_concurrency();
+
+    std::vector<std::thread> threads;
+    for (size_t threadID = 0; threadID < numThreads; ++threadID) {
+        size_t startRow = (threadID * numRowsA) / numThreads;
+        size_t endRow = ((threadID + 1) * numRowsA) / numThreads;
+        threads.emplace_back(multiplyPartial<T>, std::ref(A), std::ref(B), std::ref(result), startRow, endRow);
+    }
+
+    // Join all the threads
+    for (auto& thread : threads) {
+        thread.join();
     }
 
     return result;

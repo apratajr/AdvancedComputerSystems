@@ -15,6 +15,8 @@
 #include <string>
 #include <iostream>
 #include <random>
+#include <thread>
+#include <chrono>
 #include "Matrix.h"
 
 // Global optimization flags
@@ -32,7 +34,7 @@ bool float_        = false;
 template <typename T>
 void populateRandom(Matrix<T>& A) {
     unsigned int minValue = 0;
-    unsigned int maxValue = 10;
+    unsigned int maxValue = 9;
     std::random_device rd;  // Seed for the random number generator
     std::mt19937 gen(rd()); // Mersenne Twister PRNG
     std::uniform_int_distribution<T> dist(minValue, maxValue); /// CURRENTLY FIXED PT ONLY ///
@@ -82,11 +84,24 @@ main() {
     }
     printf("\r\n\n\tGenerating random %d x %d matrices A and B...\r\n\n", rows_, cols_);
     Matrix<int> A(rows_, cols_);
-    Matrix<int> B(3, 3);
+    Matrix<int> B(rows_, cols_);
+    // Matrix<int> B(50, 50);
+
     populateRandom(A);
     populateRandom(B);
 
-    B.print();
+    printf("\tMatrices populated. Computing product A x B = C now. ");
+    auto start = std::chrono::high_resolution_clock::now();
+    Matrix<int> result = multiplyMatricesMultithreaded(A, B);
+    // Stop the timer
+    auto stop = std::chrono::high_resolution_clock::now();
+
+    // Calculate the elapsed time
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+
+    std::cout << "Time taken by processing event: " << duration.count() << " microseconds" << std::endl;
+    printf("Done.\r\n\n");
+
 
     // // General testing stuff
     // Matrix<int> intMatrix(3, 3);
