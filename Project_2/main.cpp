@@ -65,42 +65,38 @@ void populateRandomFloat(Matrix<T>& A) {
 template <typename T>
 void testExecute(Matrix<T>& A, Matrix<T>& B) {
     // Compute the product A x B = C
-
-    if (multiThreading) {
-        printf("\r\n\n\tComputing product A x B = C now ... ");
-        auto startMultiply = std::chrono::high_resolution_clock::now();
+    printf("\r\n\n\tComputing product A x B = C now ... ");
+    auto startMultiply = std::chrono::high_resolution_clock::now();
+    if (multiThreading && !SIMD && !cacheOptimization) { // Just MT
         Matrix<T> result = multiplyMatricesMultithreaded(A, B);
-        auto stopMultiply = std::chrono::high_resolution_clock::now();
-        auto durationMultiply = std::chrono::duration_cast<std::chrono::microseconds>
-            (stopMultiply - startMultiply);
-        printf("\r\n\n\tMatrices multiplied. Elapsed time: %.6f seconds.",
-            static_cast<double>(durationMultiply.count()) / 1000000);
-        printf("\r\n\n\t");
-        //result.print();
     }
-    else if (SIMD) {
-        printf("\r\n\n\tComputing product A x B = C now ... ");
-        auto startMultiply = std::chrono::high_resolution_clock::now();
+    else if (!multiThreading && SIMD && !cacheOptimization) { // Just SIMD
         Matrix<T> result = MatrixMultiplyAVX2(A, B);
-        auto stopMultiply = std::chrono::high_resolution_clock::now();
-        auto durationMultiply = std::chrono::duration_cast<std::chrono::microseconds>
-            (stopMultiply - startMultiply);
-        printf("\r\n\n\tMatrices multiplied. Elapsed time: %.6f seconds.",
-            static_cast<double>(durationMultiply.count()) / 1000000);
-        printf("\r\n\n\t");
+    }
+    else if (!multiThreading && !SIMD && cacheOptimization) { // Just cacheOp
+        Matrix<T> result = cacheOptimizedMultiply(A, B);
+    } 
+    else if (multiThreading && SIMD && !cacheOptimization){ // MT & SIMD
+        Matrix<T> result = multiplyMatricesSIMDandMultithread(A, B);
+    }
+    else if (!multiThreading && SIMD && cacheOptimization){ // SIMD & cacheOp
+        Matrix<T> result = multiplyMatricesCacheOptimizedAndAVX2(A, B);
+    }
+    else if (!multiThreading && SIMD && cacheOptimization){ // SIMD & cacheOp
+        Matrix<T> result = multiplyMatricesCacheOptimizedAndAVX2(A, B);
+    }
+    else if (multiThreading && !SIMD && cacheOptimization){ // MT & CacheOp
+        Matrix<T> result = multiplyMatricesMultithreadedAndCacheOptimized(A, B);
     }
     else {
-        printf("\r\n\n\tComputing product A x B = C now ... ");
-        auto startMultiply = std::chrono::high_resolution_clock::now();
         Matrix<T> result = naiveMultiply(A, B);
-        auto stopMultiply = std::chrono::high_resolution_clock::now();
-        auto durationMultiply = std::chrono::duration_cast<std::chrono::microseconds>
-            (stopMultiply - startMultiply);
-        printf("\r\n\n\tMatrices multiplied. Elapsed time: %.6f seconds.",
-            static_cast<double>(durationMultiply.count()) / 1000000);
-        printf("\r\n\n\t");
-    } 
-
+    }
+    auto stopMultiply = std::chrono::high_resolution_clock::now();
+    auto durationMultiply = std::chrono::duration_cast<std::chrono::microseconds>
+        (stopMultiply - startMultiply);
+    printf("\r\n\n\tMatrices multiplied. Elapsed time: %.6f seconds.",
+        static_cast<double>(durationMultiply.count()) / 1000000);
+    printf("\r\n\n\t");
 }
 
 main(int argc, char* argv[]) {

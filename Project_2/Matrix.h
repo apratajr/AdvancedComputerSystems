@@ -127,6 +127,10 @@ Matrix<T> multiplyMatricesMultithreaded(Matrix<T>& A, Matrix<T>& B) {
 // Define a template function for matrix multiplication
 template <typename T>
 Matrix<T> MatrixMultiplyAVX2(Matrix<T>& A, Matrix<T>& B) {
+    if (A.numCols() != B.numRows()) {
+        throw std::invalid_argument("Matrix dimensions are not compatible for multiplication");
+    }
+
     size_t rowsA = A.numRows();
     size_t colsA = A.numCols();
     size_t rowsB = B.numRows();
@@ -146,4 +150,206 @@ Matrix<T> MatrixMultiplyAVX2(Matrix<T>& A, Matrix<T>& B) {
         }
     }
     return C;
+}
+
+template <typename T>
+Matrix<T> cacheOptimizedMultiply(Matrix<T>& A, Matrix<T>& B) {
+    if (A.numCols() != B.numRows()) {
+        throw std::invalid_argument("Matrix dimensions are not compatible for multiplication");
+    }
+
+    size_t numRowsA = A.numRows();
+    size_t numRowsB = B.numRows();
+    size_t numColsB = B.numCols();
+    size_t commonDim = A.numCols();
+
+    // Transpose matrix B
+    Matrix<T> BTransposed(numColsB, numRowsB);
+    for (size_t i = 0; i < numRowsB; ++i) {
+        for (size_t j = 0; j < numColsB; ++j) {
+            BTransposed(j, i) = B(i, j);
+        }
+    }
+
+    // Block size for tiling (cache block size may vary depending on your CPU architecture)
+    const size_t blockSize = 64;
+
+    // Create a result matrix of appropriate size
+    Matrix<T> result(numRowsA, numColsB);
+
+    // Iterate through blocks of the matrices
+    for (size_t i = 0; i < numRowsA; i += blockSize) {
+        for (size_t j = 0; j < numColsB; j += blockSize) {
+            for (size_t k = 0; k < commonDim; k += blockSize) {
+                // Perform matrix multiplication within the current block
+                for (size_t ii = i; ii < std::min(i + blockSize, numRowsA); ++ii) {
+                    for (size_t jj = j; jj < std::min(j + blockSize, numColsB); ++jj) {
+                        T sum = 0;
+                        for (size_t kk = k; kk < std::min(k + blockSize, commonDim); ++kk) {
+                            sum += A(ii, kk) * BTransposed(jj, kk);
+                        }
+                        result(ii, jj) = sum;
+                    }
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+// Function to perform matrix multiplication using SIMD and multithreading
+template <typename T>
+Matrix<T> multiplyMatricesSIMDandMultithread(Matrix<T>& A, Matrix<T>& B) {
+    if (A.numCols() != B.numRows()) {
+        throw std::invalid_argument("Matrix dimensions are not compatible for multiplication");
+    }
+
+    size_t numRowsA = A.numRows();
+    size_t numRowsB = B.numRows();
+    size_t numColsB = B.numCols();
+
+    // Create a result matrix of appropriate size
+    Matrix<T> result(numRowsA, numColsB);
+
+    // Determine the number of threads to use (you can adjust this as needed)
+    size_t numThreads = std::thread::hardware_concurrency();
+
+    // Divide the work among threads
+    std::vector<std::thread> threads;
+    for (size_t threadID = 0; threadID < numThreads; ++threadID) {
+        size_t startRow = (threadID * numRowsA) / numThreads;
+        size_t endRow = ((threadID + 1) * numRowsA) / numThreads;
+        threads.emplace_back([&A, &B, &result, startRow, endRow, numColsB] {
+            // Perform SIMD-accelerated multiplication within the thread
+            for (size_t i = startRow; i < endRow; ++i) {
+                for (size_t j = 0; j < numColsB; j += 8) {
+                    auto sum = _mm256_setzero_si256();
+                    for (size_t k = 0; k < B.numCols(); k++) {
+                        auto a = _mm256_set1_epi32(A(i, k));
+                        auto b = _mm256_loadu_si256(reinterpret_cast<__m256i*>(&B(k, j)));
+                        auto axb = _mm256_mullo_epi32(a, b);
+                        sum = _mm256_add_epi32(sum, axb);
+                    }
+                    _mm256_storeu_si256(reinterpret_cast<__m256i*>(&result(i, j)), sum);
+                }
+            }
+        });
+    }
+
+    // Join all the threads
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
+    return result;
+}
+
+template <typename T>
+Matrix<T> multiplyMatricesCacheOptimizedAndAVX2(Matrix<T>& A, Matrix<T>& B) {
+    if (A.numCols() != B.numRows()) {
+        throw std::invalid_argument("Matrix dimensions are not compatible for multiplication");
+    }
+
+    size_t numRowsA = A.numRows();
+    size_t numRowsB = B.numRows();
+    size_t numColsB = B.numCols();
+
+    // Create a result matrix of appropriate size
+    Matrix<T> result(numRowsA, numColsB);
+
+    // Block size for tiling (cache block size may vary depending on your CPU architecture)
+    const size_t blockSize = 64;
+
+    // Transpose matrix B
+    Matrix<T> BTransposed(numColsB, numRowsB);
+    for (size_t i = 0; i < numRowsB; ++i) {
+        for (size_t j = 0; j < numColsB; ++j) {
+            BTransposed(j, i) = B(i, j);
+        }
+    }
+
+    // Iterate through blocks of the matrices and apply SIMD within each block
+    for (size_t i = 0; i < numRowsA; i += blockSize) {
+        for (size_t j = 0; j < numColsB; j += blockSize) {
+            for (size_t k = 0; k < A.numCols(); k += blockSize) {
+                // Perform matrix multiplication within the current block
+                for (size_t ii = i; ii < std::min(i + blockSize, numRowsA); ++ii) {
+                    for (size_t jj = j; jj < std::min(j + blockSize, numColsB); jj += 8) {
+                        auto sum = _mm256_setzero_si256();
+                        for (size_t kk = k; kk < std::min(k + blockSize, A.numCols()); ++kk) {
+                            auto a = _mm256_set1_epi32(A(ii, kk));
+                            auto b = _mm256_loadu_si256(reinterpret_cast<__m256i*>(&BTransposed(jj, kk)));
+                            auto axb = _mm256_mullo_epi32(a, b);
+                            sum = _mm256_add_epi32(sum, axb);
+                        }
+                        _mm256_storeu_si256(reinterpret_cast<__m256i*>(&result(ii, jj)), sum);
+                    }
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+template <typename T>
+Matrix<T> multiplyMatricesMultithreadedAndCacheOptimized(Matrix<T>& A, Matrix<T>& B) {
+    if (A.numCols() != B.numRows()) {
+        throw std::invalid_argument("Matrix dimensions are not compatible for multiplication");
+    }
+
+    size_t numRowsA = A.numRows();
+    size_t numRowsB = B.numRows();
+    size_t numColsB = B.numCols();
+
+    // Create a result matrix of appropriate size
+    Matrix<T> result(numRowsA, numColsB);
+
+    // Block size for tiling (cache block size may vary depending on your CPU architecture)
+    const size_t blockSize = 64;
+
+    // Transpose matrix B
+    Matrix<T> BTransposed(numColsB, numRowsB);
+    for (size_t i = 0; i < numRowsB; ++i) {
+        for (size_t j = 0; j < numColsB; ++j) {
+            BTransposed(j, i) = B(i, j);
+        }
+    }
+
+    // Determine the number of threads to use (you can adjust this as needed)
+    size_t numThreads = std::thread::hardware_concurrency();
+
+    // Divide the work among threads
+    std::vector<std::thread> threads;
+    for (size_t threadID = 0; threadID < numThreads; ++threadID) {
+        size_t startRow = (threadID * numRowsA) / numThreads;
+        size_t endRow = ((threadID + 1) * numRowsA) / numThreads;
+        threads.emplace_back([&A, &BTransposed, &result, startRow, endRow, blockSize, numColsB] {
+            // Perform cache-optimized multiplication within the thread
+            for (size_t i = startRow; i < endRow; i += blockSize) {
+                for (size_t j = 0; j < numColsB; j += blockSize) {
+                    for (size_t k = 0; k < A.numCols(); k += blockSize) {
+                        // Perform matrix multiplication within the current block
+                        for (size_t ii = i; ii < std::min(i + blockSize, endRow); ++ii) {
+                            for (size_t jj = j; jj < std::min(j + blockSize, numColsB); ++jj) {
+                                T sum = 0;
+                                for (size_t kk = k; kk < std::min(k + blockSize, A.numCols()); ++kk) {
+                                    sum += A(ii, kk) * BTransposed(jj, kk);
+                                }
+                                result(ii, jj) = sum;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Join all the threads
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
+    return result;
 }
