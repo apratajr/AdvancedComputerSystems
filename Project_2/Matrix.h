@@ -51,10 +51,9 @@ public:
         }
     }
 };
-
 // Function to perform "naive" matrix-matrix multiplication
 template <typename T>
-Matrix<T> naiveMultiply(Matrix<T>& A, Matrix<T>& B) {
+Matrix<T> mulMatNAIVE(Matrix<T>& A, Matrix<T>& B) {
     size_t rowsA = A.numRows();
     size_t colsA = A.numCols();
     size_t colsB = B.numCols();
@@ -78,8 +77,7 @@ Matrix<T> naiveMultiply(Matrix<T>& A, Matrix<T>& B) {
 
     return result;
 }
-
-// Function to multiply a specific portion of the matrices
+// Function to multiply a specific portion of the matrices (used for MT mat mult)
 template <typename T>
 void multiplyPartial(
     Matrix<T>& A, Matrix<T>& B, Matrix<T>& C, size_t startRow, size_t endRow) {
@@ -92,10 +90,9 @@ void multiplyPartial(
         }
     }
 }
-
-// Function to perform matrix multiplication using multithreading
+// Function to perform matrix multiplication using multithreading only
 template <typename T>
-Matrix<T> multiplyMatricesMultithreaded(Matrix<T>& A, Matrix<T>& B) {
+Matrix<T> mulMatMT(Matrix<T>& A, Matrix<T>& B) {
     if (A.numCols() != B.numRows()) {
         throw std::invalid_argument("Matrix dimensions are not compatible for multiplication");
     }
@@ -124,9 +121,9 @@ Matrix<T> multiplyMatricesMultithreaded(Matrix<T>& A, Matrix<T>& B) {
 
     return result;
 }
-// Define a template function for matrix multiplication
+// Function to perform matrix multiplication using SIMD only
 template <typename T>
-Matrix<T> MatrixMultiplyAVX2(Matrix<T>& A, Matrix<T>& B) {
+Matrix<T> mulMatSIMD(Matrix<T>& A, Matrix<T>& B) {
     if (A.numCols() != B.numRows()) {
         throw std::invalid_argument("Matrix dimensions are not compatible for multiplication");
     }
@@ -151,9 +148,9 @@ Matrix<T> MatrixMultiplyAVX2(Matrix<T>& A, Matrix<T>& B) {
     }
     return C;
 }
-
+// Function to perform matrix multiplication using cache optimization (transposition) only
 template <typename T>
-Matrix<T> cacheOptimizedMultiply(Matrix<T>& A, Matrix<T>& B) {
+Matrix<T> mulMatCO(Matrix<T>& A, Matrix<T>& B) {
     if (A.numCols() != B.numRows()) {
         throw std::invalid_argument("Matrix dimensions are not compatible for multiplication");
     }
@@ -197,10 +194,9 @@ Matrix<T> cacheOptimizedMultiply(Matrix<T>& A, Matrix<T>& B) {
 
     return result;
 }
-
-// Function to perform matrix multiplication using SIMD and multithreading
+// Function to perform matrix multiplication using SIMD and MT
 template <typename T>
-Matrix<T> multiplyMatricesSIMDandMultithread(Matrix<T>& A, Matrix<T>& B) {
+Matrix<T> mulMatMT_SIMD(Matrix<T>& A, Matrix<T>& B) {
     if (A.numCols() != B.numRows()) {
         throw std::invalid_argument("Matrix dimensions are not compatible for multiplication");
     }
@@ -244,9 +240,9 @@ Matrix<T> multiplyMatricesSIMDandMultithread(Matrix<T>& A, Matrix<T>& B) {
 
     return result;
 }
-
+// Function to perform matrix multiplication using cache optimization and SIMD
 template <typename T>
-Matrix<T> multiplyMatricesCacheOptimizedAndAVX2(Matrix<T>& A, Matrix<T>& B) {
+Matrix<T> mulMatSIMD_CO(Matrix<T>& A, Matrix<T>& B) {
     if (A.numCols() != B.numRows()) {
         throw std::invalid_argument("Matrix dimensions are not compatible for multiplication");
     }
@@ -292,9 +288,9 @@ Matrix<T> multiplyMatricesCacheOptimizedAndAVX2(Matrix<T>& A, Matrix<T>& B) {
 
     return result;
 }
-
+// Function to perform matrix multiplication using MT and cache optimization
 template <typename T>
-Matrix<T> multiplyMatricesMultithreadedAndCacheOptimized(Matrix<T>& A, Matrix<T>& B) {
+Matrix<T> mulMatMT_CO(Matrix<T>& A, Matrix<T>& B) {
     if (A.numCols() != B.numRows()) {
         throw std::invalid_argument("Matrix dimensions are not compatible for multiplication");
     }
@@ -353,9 +349,9 @@ Matrix<T> multiplyMatricesMultithreadedAndCacheOptimized(Matrix<T>& A, Matrix<T>
 
     return result;
 }
-
+// Function to perform matrix multiplication using all possible optimizations at once
 template <typename T>
-Matrix<T> multiplyMatricesMaxOptimized(Matrix<T>& A, Matrix<T>& B) {
+Matrix<T> mulMatMAXIMUM(Matrix<T>& A, Matrix<T>& B) {
     if (A.numCols() != B.numRows()) {
         throw std::invalid_argument("Matrix dimensions are not compatible for multiplication");
     }
