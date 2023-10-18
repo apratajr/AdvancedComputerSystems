@@ -17,6 +17,7 @@
 #include <random>
 #include <thread>
 #include <chrono>
+#include <immintrin.h>
 #include "Matrix.h"
 
 // Global optimization flags
@@ -75,6 +76,18 @@ void testExecute(Matrix<T>& A, Matrix<T>& B) {
         printf("\r\n\n\tMatrices multiplied. Elapsed time: %.6f seconds.",
             static_cast<double>(durationMultiply.count()) / 1000000);
         printf("\r\n\n\t");
+        result.print();
+    }
+    else if (SIMD) {
+        printf("\r\n\n\tComputing product A x B = C now ... ");
+        auto startMultiply = std::chrono::high_resolution_clock::now();
+        //Matrix<T> result = multiplyMatricesSIMD(A, B);
+        auto stopMultiply = std::chrono::high_resolution_clock::now();
+        auto durationMultiply = std::chrono::duration_cast<std::chrono::microseconds>
+            (stopMultiply - startMultiply);
+        printf("\r\n\n\tMatrices multiplied. Elapsed time: %.6f seconds.",
+            static_cast<double>(durationMultiply.count()) / 1000000);
+        printf("\r\n\n\t");
     }
     else {
         printf("\r\n\n\tComputing product A x B = C now ... ");
@@ -87,6 +100,7 @@ void testExecute(Matrix<T>& A, Matrix<T>& B) {
             static_cast<double>(durationMultiply.count()) / 1000000);
         printf("\r\n\n\t");
     } 
+
 }
 
 main(int argc, char* argv[]) {

@@ -124,3 +124,41 @@ Matrix<T> multiplyMatricesMultithreaded(Matrix<T>& A, Matrix<T>& B) {
 
     return result;
 }
+
+// // Matrix multiplication using SIMD (AVX2)
+// template <typename T>
+// Matrix<T> multiplyMatricesSIMD(Matrix<T>& A, Matrix<T>& B) {
+//     if (A.numCols() != B.numRows()) {
+//         throw std::invalid_argument("Matrix dimensions are not compatible for multiplication");
+//     }
+
+//     size_t numRowsA = A.numRows();
+//     size_t numRowsB = B.numRows();
+//     size_t numColsB = B.numCols();
+
+//     // Create a result matrix of appropriate size
+//     Matrix<T> result(numRowsA, numColsB);
+
+//     for (size_t i = 0; i < numRowsA; ++i) {
+//         for (size_t j = 0; j < numColsB; ++j) {
+//             __m256 result_vec = _mm256_setzero_ps(); // Initialize a result vector to zeros
+
+//             for (size_t k = 0; k < numRowsB; k += 8) { // Process 8 elements at a time
+//                 __m256 a_vec = _mm256_loadu_ps(&A(i, k)); // Load 8 elements from A
+//                 __m256 b_vec = _mm256_loadu_ps(&B(k, j)); // Load 8 elements from B
+//                 result_vec = _mm256_fmadd_ps(a_vec, b_vec, result_vec); // Multiply and accumulate
+
+//                 // Continue for the next 8 elements
+//             }
+
+//             // Sum the 8 elements in result_vec and store in the result matrix
+//             float sum[8];
+//             _mm256_storeu_ps(sum, result_vec);
+//             for (size_t k = 0; k < 8; ++k) {
+//                 result(i, j) += sum[k];
+//             }
+//         }
+//     }
+
+//     return result;
+// }
