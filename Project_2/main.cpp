@@ -38,7 +38,7 @@ void populateRandomInteger(Matrix<T>& A) {
     unsigned int maxValue = 9;
     std::random_device rd;  // Seed for the random number generator
     std::mt19937 gen(rd()); // Mersenne Twister PRNG
-    std::uniform_int_distribution<int> dist(minValue, maxValue); /// CURRENTLY FIXED PT ONLY ///
+    std::uniform_int_distribution<T> dist(minValue, maxValue); /// CURRENTLY FIXED PT ONLY ///
     for (size_t i = 0; i < A.numRows(); ++i) {
         for (size_t j = 0; j < A.numCols(); ++j) {
             A(i, j) = dist(gen);
@@ -46,7 +46,7 @@ void populateRandomInteger(Matrix<T>& A) {
     }  
 }
 
-// Function to automatically populate matrix A with random Integers
+// Function to automatically populate matrix A with random Floats
 template <typename T>
 void populateRandomFloat(Matrix<T>& A) {
     float minValue = 0.0f;
@@ -81,13 +81,7 @@ void testExecute(Matrix<T>& A, Matrix<T>& B) {
     else if (SIMD) {
         printf("\r\n\n\tComputing product A x B = C now ... ");
         auto startMultiply = std::chrono::high_resolution_clock::now();
-        // Matrix<T> result = matr(A, B);
-        // if (float_){
-            Matrix<float> result = MatrixMultiplyAVX2_Float(A, B);
-        // }
-        // else if (!float_){
-        //     Matrix<int> result = MatrixMultiplyAVX2_Int(A, B);
-        // }
+        Matrix<T> result = MatrixMultiplyAVX2(A, B);
         auto stopMultiply = std::chrono::high_resolution_clock::now();
         auto durationMultiply = std::chrono::duration_cast<std::chrono::microseconds>
             (stopMultiply - startMultiply);
@@ -154,8 +148,8 @@ main(int argc, char* argv[]) {
     }
     // Integer matrices being used
     else {
-        Matrix<float> A(rows_, cols_);
-        Matrix<float> B(rows_, cols_);
+        Matrix<int> A(rows_, cols_);
+        Matrix<int> B(rows_, cols_);
         populateRandomInteger(A);
         populateRandomInteger(B);
         auto stopPopulate = std::chrono::high_resolution_clock::now();
@@ -165,25 +159,5 @@ main(int argc, char* argv[]) {
             static_cast<double>(durationPopulate.count()) / 1000000);
         testExecute(A, B);
     }
-
-    // // General testing stuff
-    // Matrix<int> intMatrix(3, 3);
-    
-    // for (int i = 0; i < intMatrix.numRows(); ++i) {
-    //     for (int j = 0; j < intMatrix.numCols(); ++j) {
-    //         intMatrix(i, j) = i * intMatrix.numCols() + j;
-    //     }
-    // }
-
-    // intMatrix.print();
-    // printf("\n");
-
-    // Matrix<int> result = naiveMultiply(intMatrix, intMatrix);
-
-    // result.print();
-    // printf("\n");
-
-    // intMatrix.print();
-
     return 0;
 }
