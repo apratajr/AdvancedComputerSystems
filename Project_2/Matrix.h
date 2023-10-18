@@ -125,40 +125,71 @@ Matrix<T> multiplyMatricesMultithreaded(Matrix<T>& A, Matrix<T>& B) {
     return result;
 }
 
-// // Matrix multiplication using SIMD (AVX2)
-// template <typename T>
-// Matrix<T> multiplyMatricesSIMD(Matrix<T>& A, Matrix<T>& B) {
-//     if (A.numCols() != B.numRows()) {
-//         throw std::invalid_argument("Matrix dimensions are not compatible for multiplication");
-//     }
+Matrix<int> MatrixMultiplyAVX2_Int(Matrix<int>& A, Matrix<int>& B) {
+    // AVX2 Function Comments are from Intel's website at
+    //  https://software.intel.com/sites/landingpage/IntrinsicsGuide/
+    // Note that this code is based on a very useful thread on StackOverflow:
+    //  https://codereview.stackexchange.com/questions/177616/avx-simd-in-matrix-multiplication
 
-//     size_t numRowsA = A.numRows();
-//     size_t numRowsB = B.numRows();
-//     size_t numColsB = B.numCols();
+    size_t rowsA = A.numRows();                   // Extract row/col information
+    size_t colsA = A.numCols();
+    size_t rowsB = B.numRows();
+    size_t colsB = B.numCols();
+    Matrix<int> C(rowsA, colsB);                // Initialize result matrix C
 
-//     // Create a result matrix of appropriate size
-//     Matrix<T> result(numRowsA, numColsB);
+    for (size_t i = 0; i < rowsA; ++i) { // iterate over rows 
+        for (size_t j = 0; j < colsB; j += 8) { // iterate over cols in blocks of 8
+                __m256i sum = _mm256_setzero_si256();
+            for (size_t k = 0; k < colsB; k ++) {
+                __m256i a = _mm256_set1_epi32(A(i, k));
+                __m256i b = _mm256_loadu_si256((__m256i*)&B(k, j));
+                __m256i axb = _mm256_mullo_epi32(a, b);
+                sum = _mm256_add_epi32(sum, axb);
+            }
+            _mm256_storeu_si256((__m256i*)&C(i,j), sum);
+        }
+    }
+    return C; // Return result matrix A x B = C
+}
 
-//     for (size_t i = 0; i < numRowsA; ++i) {
-//         for (size_t j = 0; j < numColsB; ++j) {
-//             __m256 result_vec = _mm256_setzero_ps(); // Initialize a result vector to zeros
+Matrix<float> MatrixMultiplyAVX2_Float(Matrix<float>& A, Matrix<float>& B) {
+    // AVX2 Function Comments are from Intel's website at
+    //  https://software.intel.com/sites/landingpage/IntrinsicsGuide/
+    // Note that this code is based on a very useful thread on StackOverflow:
+    //  https://codereview.stackexchange.com/questions/177616/avx-simd-in-matrix-multiplication
 
-//             for (size_t k = 0; k < numRowsB; k += 8) { // Process 8 elements at a time
-//                 __m256 a_vec = _mm256_loadu_ps(&A(i, k)); // Load 8 elements from A
-//                 __m256 b_vec = _mm256_loadu_ps(&B(k, j)); // Load 8 elements from B
-//                 result_vec = _mm256_fmadd_ps(a_vec, b_vec, result_vec); // Multiply and accumulate
+    size_t rowsA = A.numRows();               // Extract row/col information
+    size_t colsA = A.numCols();
+    size_t rowsB = B.numRows();
+    size_t colsB = B.numCols();
+    Matrix<float> C(rowsA, colsB);                // Initialize result matrix C
 
-//                 // Continue for the next 8 elements
-//             }
+    for (size_t i = 0; i < rowsA; ++i) {          // Iterate over rows of A
+        for (size_t j = 0; j < colsB; j += 8) {   // Iterate over cols of B in blocks of 8
+            __m256 sum = _mm256_setzero_ps();     // Return vector of type __m256 with all
+            for (size_t k = 0; k < colsB; k++) {  //   elements set to zero.
+                // Broadcast single-precision (32-bit) floating-point value a to all
+                //   elements of dst.
+                __m256 a = _mm256_set1_ps(A(i, k));
 
-//             // Sum the 8 elements in result_vec and store in the result matrix
-//             float sum[8];
-//             _mm256_storeu_ps(sum, result_vec);
-//             for (size_t k = 0; k < 8; ++k) {
-//                 result(i, j) += sum[k];
-//             }
-//         }
-//     }
+                // Load 256-bits (composed of 8 packed single-precision (32-bit)
+                //   floating-point elements) from memory into dst. mem_addr does
+                //   not need to be aligned on any particular boundary.
+                __m256 b = _mm256_loadu_ps(&B(k, j)); 
 
-//     return result;
-// }
+                // Multiply packed single-precision (32-bit) floating-point elements
+                //   in a and b, and store the results in dst.
+                __m256 axb = _mm256_mul_ps(a, b);
+
+                // Add packed single-precision (32-bit) floating-point elements
+                //   in a and b, and store the results in dst.
+                sum = _mm256_add_ps(sum, axb);
+            }
+            // Store 256-bits (composed of 8 packed single-precision (32-bit)
+            //   floating-point elements) from a into memory. mem_addr does not
+            //   need to be aligned on any particular boundary.
+            _mm256_storeu_ps(&C(i, j), sum);
+        }
+    }
+    return C; // Return result matrix A x B = C
+}

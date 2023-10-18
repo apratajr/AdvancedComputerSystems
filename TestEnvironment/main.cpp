@@ -8,86 +8,97 @@
 #include <immintrin.h>
 #include "Matrix.h"
 
-Matrix<int> MatrixMultiplyAVX2(Matrix<int>& A, Matrix<int>& B) {
-    size_t rowsA = A.numRows();
+// Matrix<int> MatrixMultiplyAVX2(Matrix<int>& A, Matrix<int>& B) {
+//     size_t rowsA = A.numRows();
+//     size_t colsA = A.numCols();
+//     size_t rowsB = B.numRows();
+//     size_t colsB = B.numCols();
+//     Matrix<int> C(rowsA, colsB);
+//     for (size_t i = 0; i < rowsA; ++i) { // iterate over rows 
+//         for (size_t j = 0; j < colsB; j += 8) { // iterate over cols in blocks of 8
+//             __m256i sum = _mm256_setzero_si256();
+//             for (size_t k = 0; k < colsB; k ++) {
+//                 __m256i a = _mm256_set1_epi32(A(i, k));
+//                 __m256i b = _mm256_loadu_si256((__m256i*)&B(k, j));
+//                 __m256i axb = _mm256_mullo_epi32(a, b);
+//                 sum = _mm256_add_epi16(sum, axb);
+//             }
+//             _mm256_storeu_si256((__m256i*)&C(i,j), sum);
+//         }
+//     }
+//     return C;
+// }
+
+template <typename T>
+Matrix<T> MatrixMultiplyAVX2_Int(Matrix<T>& A, Matrix<T>& B) {
+    // AVX2 Function Comments are from Intel's website at
+    //  https://software.intel.com/sites/landingpage/IntrinsicsGuide/
+    // Note that this code is based on a very useful thread on StackOverflow:
+    //  https://codereview.stackexchange.com/questions/177616/avx-simd-in-matrix-multiplication
+
+    size_t rowsA = A.numRows();                   // Extract row/col information
     size_t colsA = A.numCols();
+    size_t rowsB = B.numRows();
     size_t colsB = B.numCols();
-    Matrix<int> C(rowsA, colsA);
+    Matrix<T> C(rowsA, colsB);                // Initialize result matrix C
 
     for (size_t i = 0; i < rowsA; ++i) { // iterate over rows 
-
-        for (size_t j = 0; j < colsA; j += 8) { // iterate over cols in blocks of 8
-
-            __m256i sum = _mm256_setzero_si256();
-
+        for (size_t j = 0; j < colsB; j += 8) { // iterate over cols in blocks of 8
+                __m256i sum = _mm256_setzero_si256();
             for (size_t k = 0; k < colsB; k ++) {
-
                 __m256i a = _mm256_set1_epi32(A(i, k));
                 __m256i b = _mm256_loadu_si256((__m256i*)&B(k, j));
                 __m256i axb = _mm256_mullo_epi32(a, b);
-                sum = _mm256_add_epi16(sum, axb);
-                //C(i, k) = _mm256_extract_epi32(sum, 0) + _mm256_extract_epi32(sum, 1) + _mm256_extract_epi32(sum, 2) + _mm256_extract_epi32(sum, 3) + _mm256_extract_epi32(sum, 4) + _mm256_extract_epi32(sum, 5) + _mm256_extract_epi32(sum, 6) + _mm256_extract_epi32(sum, 7);
+                sum = _mm256_add_epi32(sum, axb);
             }
             _mm256_storeu_si256((__m256i*)&C(i,j), sum);
-            // Horizontal sum of AVX register
-            //for (int c = 0; c < rowsA; c++){
-            //    C(i, c) = _mm256_extract_epi32(sum, c);
-            //}
-            //C(i, k) = _mm256_extract_epi32(sum, 0) + _mm256_extract_epi32(sum, 1) + _mm256_extract_epi32(sum, 2) + _mm256_extract_epi32(sum, 3) + _mm256_extract_epi32(sum, 4) + _mm256_extract_epi32(sum, 5) + _mm256_extract_epi32(sum, 6) + _mm256_extract_epi32(sum, 7);
-        
         }
-    
     }
-    return C;
+    return C; // Return result matrix A x B = C
 }
 
-// Matrix<int> MatrixMultiplyAVX2(Matrix<int>& A, Matrix<int>& B) {
-//     size_t rowsA = A.numRows();
-//     size_t colsA = A.numCols();
-//     size_t colsB = B.numCols();
-//     Matrix<int> C(rowsA, colsA);
+template <typename T>
+Matrix<T> MatrixMultiplyAVX2_Float(Matrix<T>& A, Matrix<T>& B) {
+    // AVX2 Function Comments are from Intel's website at
+    //  https://software.intel.com/sites/landingpage/IntrinsicsGuide/
+    // Note that this code is based on a very useful thread on StackOverflow:
+    //  https://codereview.stackexchange.com/questions/177616/avx-simd-in-matrix-multiplication
 
-//     printf("%d", rowsA);
+    size_t rowsA = A.numRows();                   // Extract row/col information
+    size_t colsA = A.numCols();
+    size_t rowsB = B.numRows();
+    size_t colsB = B.numCols();
+    Matrix<T> C(rowsA, colsB);                // Initialize result matrix C
 
-//     for (size_t i = 0; i < rowsA; ++i) {
-//         for (size_t j = 0; j < colsA; ++j) {
-//             auto sum = _mm256_setzero_si256();
-//             for (size_t l = 0; l < colsB; l += 8) {
-//                 auto a = _mm256_loadu_si256((__m256i*)&A(i, l));
-//                 auto b = _mm256_loadu_si256((__m256i*)&B(l, j));
-//                 sum += _mm256_madd_epi16(a, b);
-//             }
-//             // Horizontal sum of AVX register
-//             C(i, j) = _mm256_extract_epi32(sum, 0) + _mm256_extract_epi32(sum, 1) + _mm256_extract_epi32(sum, 2) + _mm256_extract_epi32(sum, 3) + _mm256_extract_epi32(sum, 4) + _mm256_extract_epi32(sum, 5) + _mm256_extract_epi32(sum, 6) + _mm256_extract_epi32(sum, 7);
-//         }
-//     }
-//     return C;
-// }
+    for (size_t i = 0; i < rowsA; ++i) {          // Iterate over rows of A
+        for (size_t j = 0; j < colsB; j += 8) {   // Iterate over cols of B in blocks of 8
+            __m256 sum = _mm256_setzero_ps();     // Return vector of type __m256 with all
+            for (size_t k = 0; k < colsB; k++) {  //   elements set to zero.
+                // Broadcast single-precision (32-bit) floating-point value a to all
+                //   elements of dst.
+                __m256 a = _mm256_set1_ps(A(i, k));
 
-// Matrix<int> MatrixMultiplyAVX2(Matrix<int>& A, Matrix<int>& B) {
-//     size_t rowsA = A.numRows();
-//     size_t colsA = A.numCols();
-//     size_t colsB = B.numCols();
-//     Matrix<int> C(rowsA, colsA);
+                // Load 256-bits (composed of 8 packed single-precision (32-bit)
+                //   floating-point elements) from memory into dst. mem_addr does
+                //   not need to be aligned on any particular boundary.
+                __m256 b = _mm256_loadu_ps(&B(k, j)); 
 
-//     for (size_t i = 0; i < rowsA; ++i) {
-//         for (size_t j = 0; j < colsA; ++j) {
-//             auto sum = _mm256_setzero_si256();
-//             for (size_t l = 0; l < colsB; l += 8) {
-//                 auto a = _mm256_loadu_si256(&A(i, l));
-//                 auto b = _mm256_loadu_si256(&B(l, j));
-//                 sum = _mm256_fmadd_ps(a, b, sum);
-//             }
+                // Multiply packed single-precision (32-bit) floating-point elements
+                //   in a and b, and store the results in dst.
+                __m256 axb = _mm256_mul_ps(a, b);
 
-//             // Horizontal sum of AVX register
-//             __m128 hsum = _mm_add_ps(_mm256_extractf128_ps(sum, 0), _mm256_extractf128_ps(sum, 1));
-
-//             // Store the result directly into C(i, j)
-//             _mm_storeu_ps(&C(i, j), hsum);
-//         }
-//     }
-//     return C;
-// }
+                // Add packed single-precision (32-bit) floating-point elements
+                //   in a and b, and store the results in dst.
+                sum = _mm256_add_ps(sum, axb);
+            }
+            // Store 256-bits (composed of 8 packed single-precision (32-bit)
+            //   floating-point elements) from a into memory. mem_addr does not
+            //   need to be aligned on any particular boundary.
+            _mm256_storeu_ps(&C(i, j), sum);
+        }
+    }
+    return C; // Return result matrix A x B = C
+}
 
 // Function to automatically populate matrix A with random Integers
 template <typename T>
@@ -106,17 +117,24 @@ void populateRandomFloat(Matrix<T>& A) {
 
 int main() {
     // Create two matrices A and B with float elements
-    Matrix<int> A(8, 8);
-    Matrix<int> B(8, 8);
-    for (size_t i = 0; i < 8; i++){
-        for (size_t j = 0; j < 8; j++){
+    typedef int r;
+    unsigned int num = 8;
+    Matrix<r> A(num, num);
+    Matrix<r> B(num, num);
+    for (size_t i = 0; i < num; i++){
+        for (size_t j = 0; j < num; j++){
             A(i, j) = 1;
             B(i, j) = 1;
         }
     }
-
+    // Display A
+    A.print();
+    printf("\n\n");
+    // Display B
+    B.print();
+    printf("\n\n");
     // Multiply matrices A and B using SIMD
-    Matrix<int> D = MatrixMultiplyAVX2(A, B);
+    Matrix<r> D = MatrixMultiplyAVX2_Int(A, B);
     
     // Display A
     A.print();
