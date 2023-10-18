@@ -353,3 +353,57 @@ Matrix<T> multiplyMatricesMultithreadedAndCacheOptimized(Matrix<T>& A, Matrix<T>
 
     return result;
 }
+
+template <typename T>
+Matrix<T> multiplyMatricesMaxOptimized(Matrix<T>& A, Matrix<T>& B) {
+    if (A.numCols() != B.numRows()) {
+        throw std::invalid_argument("Matrix dimensions are not compatible for multiplication");
+    }
+
+    size_t numRowsA = A.numRows();
+    size_t numRowsB = B.numRows();
+    size_t numColsB = B.numCols();
+
+    // Transpose matrix B
+    Matrix<T> BTransposed(numColsB, numRowsB);
+    for (size_t i = 0; i < numRowsB; ++i) {
+        for (size_t j = 0; j < numColsB; ++j) {
+            BTransposed(j, i) = B(i, j);
+        }
+    }
+
+    // Create a result matrix of appropriate size
+    Matrix<T> result(numRowsA, numColsB);
+
+    // Determine the number of threads to use (you can adjust this as needed)
+    size_t numThreads = std::thread::hardware_concurrency();
+
+    // Divide the work among threads
+    std::vector<std::thread> threads;
+    for (size_t threadID = 0; threadID < numThreads; ++threadID) {
+        size_t startRow = (threadID * numRowsA) / numThreads;
+        size_t endRow = ((threadID + 1) * numRowsA) / numThreads;
+        threads.emplace_back([&A, &BTransposed, &result, startRow, endRow, numColsB] {
+            // Perform multithreaded SIMD-accelerated cache-optimized multiplication within the thread
+            for (size_t i = startRow; i < endRow; ++i) {
+                for (size_t j = 0; j < numColsB; j += 8) {
+                    auto sum = _mm256_setzero_si256();
+                    for (size_t k = 0; k < BTransposed.numCols(); k++) {
+                        auto a = _mm256_set1_epi32(A(i, k));
+                        auto b = _mm256_loadu_si256(reinterpret_cast<__m256i*>(&BTransposed(j, k)));
+                        auto axb = _mm256_mullo_epi32(a, b);
+                        sum = _mm256_add_epi32(sum, axb);
+                    }
+                    _mm256_storeu_si256(reinterpret_cast<__m256i*>(&result(i, j)), sum);
+                }
+            }
+        });
+    }
+
+    // Join all the threads
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
+    return result;
+}

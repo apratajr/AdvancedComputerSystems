@@ -76,17 +76,20 @@ void testExecute(Matrix<T>& A, Matrix<T>& B) {
     else if (!multiThreading && !SIMD && cacheOptimization) { // Just cacheOp
         Matrix<T> result = cacheOptimizedMultiply(A, B);
     } 
-    else if (multiThreading && SIMD && !cacheOptimization){ // MT & SIMD
+    else if (multiThreading && SIMD && !cacheOptimization) { // MT & SIMD
         Matrix<T> result = multiplyMatricesSIMDandMultithread(A, B);
     }
-    else if (!multiThreading && SIMD && cacheOptimization){ // SIMD & cacheOp
+    else if (!multiThreading && SIMD && cacheOptimization) { // SIMD & cacheOp
         Matrix<T> result = multiplyMatricesCacheOptimizedAndAVX2(A, B);
     }
-    else if (!multiThreading && SIMD && cacheOptimization){ // SIMD & cacheOp
+    else if (!multiThreading && SIMD && cacheOptimization) { // SIMD & cacheOp
         Matrix<T> result = multiplyMatricesCacheOptimizedAndAVX2(A, B);
     }
-    else if (multiThreading && !SIMD && cacheOptimization){ // MT & CacheOp
+    else if (multiThreading && !SIMD && cacheOptimization) { // MT & CacheOp
         Matrix<T> result = multiplyMatricesMultithreadedAndCacheOptimized(A, B);
+    }
+    else if (multiThreading && SIMD && cacheOptimization) { // MAXIMUM POWER!
+        Matrix<T> result = multiplyMatricesMaxOptimized(A, B);
     }
     else {
         Matrix<T> result = naiveMultiply(A, B);
