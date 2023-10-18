@@ -98,7 +98,6 @@ Matrix<T> mulMatMT(Matrix<T>& A, Matrix<T>& B) {
     }
 
     size_t numRowsA = A.numRows();
-    size_t numRowsB = B.numRows();
     size_t numColsB = B.numCols();
 
     // Create a result matrix of appropriate size
@@ -129,8 +128,6 @@ Matrix<T> mulMatSIMD(Matrix<T>& A, Matrix<T>& B) {
     }
 
     size_t rowsA = A.numRows();
-    size_t colsA = A.numCols();
-    size_t rowsB = B.numRows();
     size_t colsB = B.numCols();
     Matrix<T> C(rowsA, colsB);
 
@@ -192,7 +189,6 @@ Matrix<T> mulMatMT_SIMD(Matrix<T>& A, Matrix<T>& B) {
     }
 
     size_t numRowsA = A.numRows();
-    size_t numRowsB = B.numRows();
     size_t numColsB = B.numCols();
 
     // Create a result matrix of appropriate size
@@ -240,7 +236,6 @@ Matrix<T> mulMatSIMD_CO(Matrix<T>& A, Matrix<T>& B) {
     size_t numRowsA = A.numRows();
     size_t numRowsB = B.numRows();
     size_t numColsB = B.numCols();
-    size_t commonDim = A.numCols();
 
     // Transpose matrix B
     Matrix<T> BTransposed(numColsB, numRowsB);
