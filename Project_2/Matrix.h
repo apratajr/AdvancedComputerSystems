@@ -168,27 +168,17 @@ Matrix<T> mulMatCO(Matrix<T>& A, Matrix<T>& B) {
         }
     }
 
-    // Block size for tiling (cache block size may vary depending on your CPU architecture)
-    const size_t blockSize = 64;
-
     // Create a result matrix of appropriate size
     Matrix<T> result(numRowsA, numColsB);
 
-    // Iterate through blocks of the matrices
-    for (size_t i = 0; i < numRowsA; i += blockSize) {
-        for (size_t j = 0; j < numColsB; j += blockSize) {
-            for (size_t k = 0; k < commonDim; k += blockSize) {
-                // Perform matrix multiplication within the current block
-                for (size_t ii = i; ii < std::min(i + blockSize, numRowsA); ++ii) {
-                    for (size_t jj = j; jj < std::min(j + blockSize, numColsB); ++jj) {
-                        T sum = 0;
-                        for (size_t kk = k; kk < std::min(k + blockSize, commonDim); ++kk) {
-                            sum += A(ii, kk) * BTransposed(jj, kk);
-                        }
-                        result(ii, jj) = sum;
-                    }
-                }
+    // Perform matrix multiplication using transposed matrix B
+    for (size_t i = 0; i < numRowsA; ++i) {
+        for (size_t j = 0; j < numColsB; ++j) {
+            T sum = 0;
+            for (size_t k = 0; k < commonDim; ++k) {
+                sum += A(i, k) * BTransposed(j, k);
             }
+            result(i, j) = sum;
         }
     }
 
@@ -250,12 +240,7 @@ Matrix<T> mulMatSIMD_CO(Matrix<T>& A, Matrix<T>& B) {
     size_t numRowsA = A.numRows();
     size_t numRowsB = B.numRows();
     size_t numColsB = B.numCols();
-
-    // Create a result matrix of appropriate size
-    Matrix<T> result(numRowsA, numColsB);
-
-    // Block size for tiling (cache block size may vary depending on your CPU architecture)
-    const size_t blockSize = 64;
+    size_t commonDim = A.numCols();
 
     // Transpose matrix B
     Matrix<T> BTransposed(numColsB, numRowsB);
@@ -265,24 +250,20 @@ Matrix<T> mulMatSIMD_CO(Matrix<T>& A, Matrix<T>& B) {
         }
     }
 
-    // Iterate through blocks of the matrices and apply SIMD within each block
-    for (size_t i = 0; i < numRowsA; i += blockSize) {
-        for (size_t j = 0; j < numColsB; j += blockSize) {
-            for (size_t k = 0; k < A.numCols(); k += blockSize) {
-                // Perform matrix multiplication within the current block
-                for (size_t ii = i; ii < std::min(i + blockSize, numRowsA); ++ii) {
-                    for (size_t jj = j; jj < std::min(j + blockSize, numColsB); jj += 8) {
-                        auto sum = _mm256_setzero_si256();
-                        for (size_t kk = k; kk < std::min(k + blockSize, A.numCols()); ++kk) {
-                            auto a = _mm256_set1_epi32(A(ii, kk));
-                            auto b = _mm256_loadu_si256(reinterpret_cast<__m256i*>(&BTransposed(jj, kk)));
-                            auto axb = _mm256_mullo_epi32(a, b);
-                            sum = _mm256_add_epi32(sum, axb);
-                        }
-                        _mm256_storeu_si256(reinterpret_cast<__m256i*>(&result(ii, jj)), sum);
-                    }
-                }
+    // Create a result matrix of appropriate size
+    Matrix<T> result(numRowsA, numColsB);
+
+    // Perform matrix multiplication with SIMD using the transposed matrix B
+    for (size_t i = 0; i < numRowsA; ++i) {
+        for (size_t j = 0; j < numColsB; j += 8) {
+            auto sum = _mm256_setzero_si256();
+            for (size_t k = 0; k < BTransposed.numCols(); k++) {
+                auto a = _mm256_set1_epi32(A(i, k));
+                auto b = _mm256_loadu_si256(reinterpret_cast<__m256i*>(&BTransposed(j, k)));
+                auto axb = _mm256_mullo_epi32(a, b);
+                sum = _mm256_add_epi32(sum, axb);
             }
+            _mm256_storeu_si256(reinterpret_cast<__m256i*>(&result(i, j)), sum);
         }
     }
 
@@ -302,9 +283,6 @@ Matrix<T> mulMatMT_CO(Matrix<T>& A, Matrix<T>& B) {
     // Create a result matrix of appropriate size
     Matrix<T> result(numRowsA, numColsB);
 
-    // Block size for tiling (cache block size may vary depending on your CPU architecture)
-    const size_t blockSize = 64;
-
     // Transpose matrix B
     Matrix<T> BTransposed(numColsB, numRowsB);
     for (size_t i = 0; i < numRowsB; ++i) {
@@ -321,22 +299,15 @@ Matrix<T> mulMatMT_CO(Matrix<T>& A, Matrix<T>& B) {
     for (size_t threadID = 0; threadID < numThreads; ++threadID) {
         size_t startRow = (threadID * numRowsA) / numThreads;
         size_t endRow = ((threadID + 1) * numRowsA) / numThreads;
-        threads.emplace_back([&A, &BTransposed, &result, startRow, endRow, blockSize, numColsB] {
+        threads.emplace_back([&A, &BTransposed, &result, startRow, endRow, numColsB] {
             // Perform cache-optimized multiplication within the thread
-            for (size_t i = startRow; i < endRow; i += blockSize) {
-                for (size_t j = 0; j < numColsB; j += blockSize) {
-                    for (size_t k = 0; k < A.numCols(); k += blockSize) {
-                        // Perform matrix multiplication within the current block
-                        for (size_t ii = i; ii < std::min(i + blockSize, endRow); ++ii) {
-                            for (size_t jj = j; jj < std::min(j + blockSize, numColsB); ++jj) {
-                                T sum = 0;
-                                for (size_t kk = k; kk < std::min(k + blockSize, A.numCols()); ++kk) {
-                                    sum += A(ii, kk) * BTransposed(jj, kk);
-                                }
-                                result(ii, jj) = sum;
-                            }
-                        }
+            for (size_t i = startRow; i < endRow; ++i) {
+                for (size_t j = 0; j < numColsB; ++j) {
+                    T sum = 0;
+                    for (size_t k = 0; k < A.numCols(); ++k) {
+                        sum += A(i, k) * BTransposed(j, k);
                     }
+                    result(i, j) = sum;
                 }
             }
         });

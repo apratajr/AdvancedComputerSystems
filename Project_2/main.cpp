@@ -24,7 +24,6 @@
 bool multiThreading    = false;
 bool SIMD              = false;
 bool cacheOptimization = false;
-unsigned int threads   = 1;
 
 // Matrix testing variables (default lowest matrix size)
 unsigned int rows_ = 100;
