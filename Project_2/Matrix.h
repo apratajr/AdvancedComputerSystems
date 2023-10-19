@@ -123,6 +123,9 @@ Matrix<T> mulMatMT(Matrix<T>& A, Matrix<T>& B) {
 // Function to perform matrix multiplication using SIMD only
 template <typename T>
 Matrix<T> mulMatSIMD(Matrix<T>& A, Matrix<T>& B) {
+    // SUPER useful and informative discussion at
+    //  https://codereview.stackexchange.com/questions/177616/avx-simd-in-matrix-multiplication
+    // is the basis for this code.
     if (A.numCols() != B.numRows()) {
         throw std::invalid_argument("Matrix dimensions are not compatible for multiplication");
     }
