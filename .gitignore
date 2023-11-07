@@ -30,3 +30,6 @@
 *.exe
 *.out
 *.app
+
+# Project_4 specific exclusion (large text file)
+Column.txt
