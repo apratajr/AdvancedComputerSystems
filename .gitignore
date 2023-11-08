@@ -32,4 +32,6 @@
 *.app
 
 # Project_4 specific exclusion (large text file)
-Column.txt
+#TestEnvironment\P4_Testing\*.txt
+Project_4/*.txt
+TestEnvironment/P4_Testing/*.txt

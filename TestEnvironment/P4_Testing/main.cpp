@@ -55,7 +55,22 @@ int main() {
     std::cout << "K: 'apple', V: " << dict.addKey("apple") << std::endl;
     std::cout << "K: 'cherry', V: " << dict.addKey("cherry") << std::endl;
 
+    /*
+    auto start = std::chrono::high_resolution_clock::now();
 
+    readAndEncode(filepath_, dictionary);
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
+    std::cout << "Time elapsed: " << duration.count() << " seconds." << std::endl;
+    */
+
+    /*
+    while (std::getline(file_in, line)) {
+        int encoding = d.addKey(line);
+        file_out << "Input: " << std::setw(20) << std::left << line << "Encoding: " << encoding << std::endl;
+    }
+    */
 
     return 0;
 }

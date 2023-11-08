@@ -3,10 +3,8 @@
 // desc: ACS Project 4 MAIN
 // auth: Andrew Prata
 //
-// This program performs matrix-matrix multiplication.
-// It includes three optimization options for this
-// operation. These are: multithreading, SIMD, and
-// cache usage optimization.
+// This program implements a dictionary codec which
+// encodes raw column data into a compact form.
 //
 
 #include <iostream>
@@ -45,31 +43,33 @@ public:
     }
 };
 
-void readAndEncode(const std::string& filepath, EncoderDictionary& d) {
-    std::ifstream file(filepath);
-    if (!file.is_open()) {
-        std::cerr << "Error: Could not open the file " << filepath << std::endl;
+void readAndEncode(const std::string& filepath_in, const std::string& filepath_out, EncoderDictionary& d) {
+    std::ofstream file_out(filepath_out);
+    if (!file_out.is_open()) {
+        std::cerr << "Error: Could not open the output file " << filepath_out << std::endl;
+        return;
+    }
+    std::ifstream file_in(filepath_in);
+    if (!file_in.is_open()) {
+        std::cerr << "Error: Could not open the input file " << filepath_in << std::endl;
         return;
     }
     std::string line;
-    while (std::getline(file, line)) {
+    file_out << std::hex;
+    while (std::getline(file_in, line)) {
         int encoding = d.addKey(line);
-        std::cout << "Input: " << std::setw(20) << std::left << line << "Encoding: " << encoding << std::endl;
+        file_out << encoding << std::endl;
     }
-    file.close();
+    file_in.close();
+    file_out.close();
 }
 
 int main(void) {
-    std::string filepath_ = "ColumnSmall.txt";
+    std::string filepath_in = "Column.txt";
+    std::string filepath_out = "ColumnEncoded2.txt";
     EncoderDictionary dictionary;
 
-    auto start = std::chrono::high_resolution_clock::now();
-
-    readAndEncode(filepath_, dictionary);
-
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
-    std::cout << "Time elapsed: " << duration.count() << " seconds." << std::endl;
+    readAndEncode(filepath_in, filepath_out, dictionary);
 
     return 0;
 }
