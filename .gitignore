@@ -33,5 +33,5 @@
 
 # Project_4 specific exclusion (large text file)
 #TestEnvironment\P4_Testing\*.txt
-Project_4/*.txt
+Project_4/Data/*.txt
 TestEnvironment/P4_Testing/*.txt
