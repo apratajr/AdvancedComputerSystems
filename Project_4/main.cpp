@@ -69,6 +69,7 @@ public:
     }
 };
 
+// Asynchronously process a portion of the input and form the correlated portion of dictionary d
 void asyncProcessor(const std::string& filepath_in, size_t start, size_t end, EncoderDictionary& d) {
     // Open & Verify
     std::ifstream file_in_async(filepath_in);
@@ -106,7 +107,7 @@ void createDictionary(const std::string& filepath_in, const std::string& dictpat
     }
 
     // Prepare for multithreading split
-    const size_t num_threads = 2; //std::thread::hardware_concurrency(); // Get the number of available hardware threads
+    const size_t num_threads = std::thread::hardware_concurrency(); // Get the number of available hardware threads
     size_t line_count = 0;
     std::string line;
     while (std::getline(file_in, line)) {
