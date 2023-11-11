@@ -43,7 +43,32 @@ public:
     }
 };
 
-void readAndEncode(const std::string& filepath_in, const std::string& filepath_out, EncoderDictionary& d) {
+// Form the dictionary itself, with keys as the original data and values as the encodings
+void createDictionary(const std::string& filepath_in, const std::string& dictpath_out, EncoderDictionary& d) {
+    std::ofstream dict_out(dictpath_out);
+    if (!dict_out.is_open()) {
+        std::cerr << "Error: Could not open the dictionary file " << dictpath_out << '\n';
+        return;
+    }
+    std::ifstream file_in(filepath_in);
+    if (!file_in.is_open()) {
+        std::cerr << "Error: Could not open the input file " << filepath_in << '\n';
+        return;
+    }
+    std::string line;
+    dict_out << std::hex;
+    while (std::getline(file_in, line)) {
+        int encoding = d.addKey(line);
+        dict_out << line << ":" << encoding << '\n';
+    }
+    file_in.close();
+    dict_out.close();
+    std::cout << "DICTIONARY CREATED." << '\n';
+    return;
+}
+
+// Scan input file, perform encoding against existing dictionary, write to file
+void encode(const std::string& filepath_in, const std::string& filepath_out, EncoderDictionary& d) {
     std::ofstream file_out(filepath_out);
     if (!file_out.is_open()) {
         std::cerr << "Error: Could not open the output file " << filepath_out << '\n';
@@ -55,26 +80,27 @@ void readAndEncode(const std::string& filepath_in, const std::string& filepath_o
         return;
     }
     std::string line;
-    file_out << std::hex;
     while (std::getline(file_in, line)) {
         int encoding = d.addKey(line);
         file_out << encoding << '\n';
     }
-    file_in.close();
-    file_out.close();
+    file_out.flush();
 }
 
-main(int argc, char* argv[]) {
-    if (argc < 3) { // Ensure correct commandline arguments
-        std::cerr << "Usage: " << argv[0] << " <path/to/input/file.txt>"
-            " <path/to/output/file.txt>" << '\n';
+int main(int argc, char* argv[]) {
+    if (argc < 4) { // Ensure correct commandline arguments
+        std::cerr << "Usage: " << argv[0] << " <path/to/input.txt>"
+            " <path/to/output.txt> <path/to/dictionary.txt>" << '\n';
         return 1;   // Return an error code
     }
     std::string filepath_in = argv[1];
     std::string filepath_out = argv[2];
+    std::string dictpath_out = argv[3];
     EncoderDictionary dictionary;
 
-    readAndEncode(filepath_in, filepath_out, dictionary);
+    createDictionary(filepath_in, dictpath_out, dictionary);
+    encode(filepath_in, filepath_out, dictionary);
 
+    std::cout.flush();
     return 0;
 }
