@@ -12,13 +12,13 @@
 #include <string>
 #include <chrono>
 #include <algorithm>
-#include <unordered_map>
+#include <map>
 #include <iomanip>
 
 // Class for the encoding translation dictionary
 class EncoderDictionary {
 private:
-    std::unordered_map<std::string, int> dictionary;
+    std::map<std::string, int> dictionary;
     int nextValue;
 public:
     // Constructor
@@ -37,6 +37,17 @@ public:
             return nextValue++;
         }
     }
+
+    // Function to retrieve a key encoding value
+    int getEncoding(const std::string& key) {
+        return dictionary.find(key)->second;
+    }
+
+    // Function to provide access to the internal dictionary
+    std::map<std::string, int>& getDictionary() {
+        return dictionary;
+    }
+
     // Wrapper function for size() of internal dict
     size_t size() const {
         return dictionary.size();
@@ -58,11 +69,15 @@ void createDictionary(const std::string& filepath_in, const std::string& dictpat
     std::string line;
     dict_out << std::hex;
     while (std::getline(file_in, line)) {
-        int encoding = d.addKey(line);
-        dict_out << line << ":" << encoding << '\n';
+        d.addKey(line);
+    }
+    for (const auto& entry : d.getDictionary()) {
+        dict_out << entry.first << ":" << entry.second << '\n';
     }
     file_in.close();
+    dict_out.flush();
     dict_out.close();
+
     std::cout << "DICTIONARY CREATED." << '\n';
     return;
 }
@@ -81,10 +96,12 @@ void encode(const std::string& filepath_in, const std::string& filepath_out, Enc
     }
     std::string line;
     while (std::getline(file_in, line)) {
-        int encoding = d.addKey(line);
+        int encoding = d.getEncoding(line);
         file_out << encoding << '\n';
     }
+    file_in.close();
     file_out.flush();
+    file_out.close();
 }
 
 int main(int argc, char* argv[]) {
