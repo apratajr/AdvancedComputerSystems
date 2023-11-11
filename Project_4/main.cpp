@@ -46,27 +46,32 @@ public:
 void readAndEncode(const std::string& filepath_in, const std::string& filepath_out, EncoderDictionary& d) {
     std::ofstream file_out(filepath_out);
     if (!file_out.is_open()) {
-        std::cerr << "Error: Could not open the output file " << filepath_out << std::endl;
+        std::cerr << "Error: Could not open the output file " << filepath_out << '\n';
         return;
     }
     std::ifstream file_in(filepath_in);
     if (!file_in.is_open()) {
-        std::cerr << "Error: Could not open the input file " << filepath_in << std::endl;
+        std::cerr << "Error: Could not open the input file " << filepath_in << '\n';
         return;
     }
     std::string line;
     file_out << std::hex;
     while (std::getline(file_in, line)) {
         int encoding = d.addKey(line);
-        file_out << encoding << std::endl;
+        file_out << encoding << '\n';
     }
     file_in.close();
     file_out.close();
 }
 
-int main(void) {
-    std::string filepath_in = "Column.txt";
-    std::string filepath_out = "ColumnEncoded2.txt";
+main(int argc, char* argv[]) {
+    if (argc < 3) { // Ensure correct commandline arguments
+        std::cerr << "Usage: " << argv[0] << " <path/to/input/file.txt>"
+            " <path/to/output/file.txt>" << '\n';
+        return 1;   // Return an error code
+    }
+    std::string filepath_in = argv[1];
+    std::string filepath_out = argv[2];
     EncoderDictionary dictionary;
 
     readAndEncode(filepath_in, filepath_out, dictionary);
