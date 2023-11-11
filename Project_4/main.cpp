@@ -107,7 +107,7 @@ void createDictionary(const std::string& filepath_in, const std::string& dictpat
     }
 
     // Prepare for multithreading split
-    const size_t num_threads = std::thread::hardware_concurrency(); // Get the number of available hardware threads
+    const size_t num_threads = 1;//std::thread::hardware_concurrency(); // Get the number of available hardware threads
     size_t line_count = 0;
     std::string line;
     while (std::getline(file_in, line)) {
@@ -115,6 +115,8 @@ void createDictionary(const std::string& filepath_in, const std::string& dictpat
     }
     const size_t lines_per_thread = floor(line_count / num_threads);
     std::vector<std::thread> threads;
+
+    auto start = std::chrono::high_resolution_clock::now();
 
     // Divide work over thread count and asynchronously build dictionary data structure
     for (size_t i = 0; i < num_threads; ++i) {
@@ -127,6 +129,10 @@ void createDictionary(const std::string& filepath_in, const std::string& dictpat
     for (size_t i = 0; i < num_threads; ++i) {
         threads[i].join();
     }
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    std::cout << "Encoding Complete. Time elapsed: " << duration.count() << " useconds." << std::endl;
 
     // Contruct dictionary text file (singlethreaded, otherwise mutex issues)
     dict_out << std::hex; // Testing of encoded sizes and such
@@ -142,7 +148,7 @@ void createDictionary(const std::string& filepath_in, const std::string& dictpat
 }
 
 // Scan input file, perform encoding against existing dictionary, write to file
-void encode(const std::string& filepath_in, const std::string& filepath_out, EncoderDictionary& d) {
+void createEncodedFile(const std::string& filepath_in, const std::string& filepath_out, EncoderDictionary& d) {
     std::ofstream file_out(filepath_out);
     if (!file_out.is_open()) {
         std::cerr << "Error: Could not open the output file " << filepath_out << '\n';
@@ -163,6 +169,51 @@ void encode(const std::string& filepath_in, const std::string& filepath_out, Enc
     file_out.close();
 }
 
+// Function to read in an existing dictionary file for use with an encoded file
+void readDictionary(const std::string& dictpath_in, EncoderDictionary& d) {
+    // Open and verify stream
+    std::ifstream dict_in(dictpath_in);
+    if (!dict_in.is_open()) {
+        std::cerr << "Error: Could not open the dictionary file " << dictpath_in << '\n';
+        return;
+    }
+    std::string line;
+    while (std::getline(dict_in, line)) {
+        size_t kvp_split = line.find(':');
+        std::string key = line.substr(0, kvp_split);
+        int val = std::stoi(line.substr(kvp_split+1), nullptr, 16);
+        d.getDictionary()[key] = val;
+    }
+}
+
+// Function to read a vanilla column file and throw it in DRAM
+void readInputFile(const std::string& filepath_in, std::vector<std::string> input_data) {
+    std::ifstream file_in(filepath_in);
+    if (!file_in.is_open()) {
+        std::cerr << "Error: Could not open the input file " << filepath_in << '\n';
+        return;
+    }
+    std::string line;
+    while (std::getline(file_in, line)) {
+        input_data.push_back(line);
+    }
+    file_in.close();
+}
+
+// Functon to read an encoded file and throw it in DRAM
+void readEncodedFile(const std::string& filepath_in_enc, std::vector<std::string> encoded_data) {
+    std::ifstream file_in_enc(filepath_in_enc);
+    if (!file_in_enc.is_open()) {
+        std::cerr << "Error: Could not open the encoded file " << filepath_in_enc << '\n';
+        return;
+    }
+    std::string line;
+    while (std::getline(file_in_enc, line)) {
+        encoded_data.push_back(line);
+    }
+    file_in_enc.close();
+}
+
 int main(int argc, char* argv[]) {
     if (argc < 4) { // Ensure correct commandline arguments
         std::cerr << "Usage: " << argv[0] << " <path/to/input.txt>"
@@ -171,11 +222,15 @@ int main(int argc, char* argv[]) {
     }
     std::string filepath_in = argv[1];
     std::string filepath_out = argv[2];
-    std::string dictpath_out = argv[3];
-    EncoderDictionary dictionary;
+    std::string dictpath = argv[3];
 
-    createDictionary(filepath_in, dictpath_out, dictionary);
-    encode(filepath_in, filepath_out, dictionary);
+    EncoderDictionary dictionary; // The dictionary itself - how we translate between input and encoded
+    std::vector<std::string> inputraw; // The input as it is in its txt
+    std::vector<int> inputencoded; // The encoded input as it is in its txt
+
+    //createDictionary(filepath_in, dictpath, dictionary);
+    readDictionary(dictpath, dictionary);
+    createEncodedFile(filepath_in, filepath_out, dictionary);
 
     std::cout.flush();
     return 0;
