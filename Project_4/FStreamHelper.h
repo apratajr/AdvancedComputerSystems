@@ -6,8 +6,8 @@
 // This program implements basic file opening helpers.
 //
 
-#include <iostream>
-#include <fstream>
+#include <iostream> // std::cerr
+#include <fstream>  // std::ifstream/std::ofstream
 
 // Helper function to open/verify a filestream for reading
 std::ifstream openFileForReading(const std::string& filepath) {

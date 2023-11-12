@@ -7,16 +7,14 @@
 // and its helper functions.
 //
 
-#include "FStreamHelper.h"
-#include <map>
-#include <string>
-#include <mutex>
-#include <vector>
-#include <iostream>
-#include <fstream>
-#include <cmath>
-#include <thread>
-#include <emmintrin.h>
+#include "FStreamHelper.h" // File operaitons
+#include <map>             // std::map
+#include <string>          // std::string 
+#include <mutex>           // std::mutex/std::lock_guard
+#include <vector>          // std::vector
+#include <cmath>           // floor()
+#include <thread>          // std::thread
+#include <emmintrin.h>     // AVX2 intrinsics
 
 // Class for the encoding translation dictionary
 class EncoderDictionary {
