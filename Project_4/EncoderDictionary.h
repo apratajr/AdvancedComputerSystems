@@ -308,5 +308,35 @@ void searchEncodedSIMD(const std::vector<int>& encoded_data, EncoderDictionary& 
 
 // SIMD-accelerated PREFIX search of encoded column
 void prefixSearchEncodedSIMD(const std::vector<int>& encoded_data, EncoderDictionary& d, const std::string& target_prefix) {
-    // Implementation Here
+    // Get the encodings for the targets who match the prefix condition
+    std::vector<int> target_encodings = d.getEncodingValuesWithPrefix(target_prefix);
+
+    // Form a std::vector of target AVX2 vectors for SIMD comparison
+    std::vector<__m128i> target_vecs;
+    for (size_t i = 0; i < target_encodings.size(); ++i) {
+        target_vecs.push_back(_mm_set1_epi32(target_encodings[i]));
+    }
+
+    // Loop over encodings with SIMD this time
+    for (size_t i = 0; i < encoded_data.size(); i += 4) {
+        // Load 4 integers from encoded_data into a SIMD register
+        __m128i data_vec = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&encoded_data[i]));
+
+        for (size_t j = 0; j < target_vecs.size(); ++j) {
+            // Compare each element in the SIMD register with the target encoding
+            __m128i result = _mm_cmpeq_epi32(data_vec, target_vecs[j]);
+
+            // Store the comparison result in an array
+            int comparison_result[4];
+            _mm_storeu_si128(reinterpret_cast<__m128i*>(comparison_result), result);
+
+            // Check each comparison result
+            for (int k = 0; k < 4; ++k) {
+                if (comparison_result[k] != 0) {
+                    // If a match is found, output the location
+                    std::cout << "ENCAVX String " << target_prefix << " match found at location: " << i + k << std::endl;
+                }
+            }
+        }
+    }
 }

@@ -71,6 +71,12 @@ int main(int argc, char* argv[]) {
     duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     std::cout << "ENCSTD Time elapsed: " << duration.count() << " usec." << std::endl;
 
+    start = std::chrono::high_resolution_clock::now();
+    prefixSearchEncodedSIMD(inputencoded, dictionary, "wz");
+    stop = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    std::cout << "ENCSTD Time elapsed: " << duration.count() << " usec." << std::endl;
+
     std::cout.flush();
     return 0;
 }
