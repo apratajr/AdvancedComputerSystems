@@ -7,6 +7,7 @@
 // and its helper functions.
 //
 
+#include "FStreamHelper.h"
 #include <map>
 #include <string>
 #include <mutex>
@@ -86,11 +87,7 @@ public:
 // Asynchronously process a portion of the input and form the correlated portion of dictionary d
 void asyncProcessor(const std::string& filepath_in, size_t start, size_t end, EncoderDictionary& d) {
     // Open & Verify
-    std::ifstream file_in_async(filepath_in);
-    if (!file_in_async.is_open()) {
-        std::cerr << "Error: Could not open the input file " << filepath_in << '\n';
-        return;
-    }
+    std::ifstream file_in_async = openFileForReading(filepath_in);
 
     // Seek to the beginning of the desired line
     for (size_t i = 0; i < start; ++i) {
@@ -109,16 +106,8 @@ void asyncProcessor(const std::string& filepath_in, size_t start, size_t end, En
 // Form the dictionary itself, with keys as the original data and values as the encodings
 void createDictionary(const std::string& filepath_in, const std::string& dictpath_out, EncoderDictionary& d) {
     // Open and verify streams
-    std::ofstream dict_out(dictpath_out);
-    if (!dict_out.is_open()) {
-        std::cerr << "Error: Could not open the dictionary file " << dictpath_out << '\n';
-        return;
-    }
-    std::ifstream file_in(filepath_in);
-    if (!file_in.is_open()) {
-        std::cerr << "Error: Could not open the input file " << filepath_in << '\n';
-        return;
-    }
+    std::ofstream dict_out = openFileForWriting(dictpath_out);
+    std::ifstream file_in = openFileForReading(filepath_in);
 
     // Prepare for multithreading split
     const size_t num_threads = 1;//std::thread::hardware_concurrency(); // Get the number of available hardware threads
@@ -162,16 +151,9 @@ void createDictionary(const std::string& filepath_in, const std::string& dictpat
 
 // Scan input file, perform encoding against existing dictionary, write to file
 void createEncodedFile(const std::string& filepath_in, const std::string& filepath_out, EncoderDictionary& d) {
-    std::ofstream file_out(filepath_out);
-    if (!file_out.is_open()) {
-        std::cerr << "Error: Could not open the output file " << filepath_out << '\n';
-        return;
-    }
-    std::ifstream file_in(filepath_in);
-    if (!file_in.is_open()) {
-        std::cerr << "Error: Could not open the input file " << filepath_in << '\n';
-        return;
-    }
+    std::ofstream file_out = openFileForWriting(filepath_out);
+    std::ifstream file_in = openFileForReading(filepath_in);
+
     std::string line;
     while (std::getline(file_in, line)) {
         int encoding = d.getEncoding(line);
@@ -185,11 +167,7 @@ void createEncodedFile(const std::string& filepath_in, const std::string& filepa
 // Function to read in an existing dictionary file for use with an encoded file
 void readDictionary(const std::string& dictpath_in, EncoderDictionary& d) {
     // Open and verify stream
-    std::ifstream dict_in(dictpath_in);
-    if (!dict_in.is_open()) {
-        std::cerr << "Error: Could not open the dictionary file " << dictpath_in << '\n';
-        return;
-    }
+    std::ifstream dict_in = openFileForReading(dictpath_in);
     std::string line;
     while (std::getline(dict_in, line)) {
         size_t kvp_split = line.find(':');
@@ -201,11 +179,7 @@ void readDictionary(const std::string& dictpath_in, EncoderDictionary& d) {
 
 // Function to read a vanilla column file and throw it in DRAM
 void readInputFile(const std::string& filepath_in, std::vector<std::string>& input_data) {
-    std::ifstream file_in(filepath_in);
-    if (!file_in.is_open()) {
-        std::cerr << "Error: Could not open the input file " << filepath_in << '\n';
-        return;
-    }
+    std::ifstream file_in = openFileForReading(filepath_in);
     std::string line;
     while (std::getline(file_in, line)) {
         input_data.push_back(line);
@@ -215,11 +189,7 @@ void readInputFile(const std::string& filepath_in, std::vector<std::string>& inp
 
 // Functon to read an encoded file and throw it in DRAM
 void readEncodedFile(const std::string& filepath_in_enc, std::vector<int>& encoded_data) {
-    std::ifstream file_in_enc(filepath_in_enc);
-    if (!file_in_enc.is_open()) {
-        std::cerr << "Error: Could not open the encoded file " << filepath_in_enc << '\n';
-        return;
-    }
+    std::ifstream file_in_enc = openFileForReading(filepath_in_enc);
     std::string line;
     while (std::getline(file_in_enc, line)) {
         encoded_data.push_back(std::stoi(line));
