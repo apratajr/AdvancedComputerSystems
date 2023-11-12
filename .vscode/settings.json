@@ -57,6 +57,9 @@
         "thread": "cpp",
         "variant": "cpp",
         "fstream": "cpp",
-        "cstdarg": "cpp"
+        "cstdarg": "cpp",
+        "condition_variable": "cpp",
+        "map": "cpp",
+        "mutex": "cpp"
     }
 }
