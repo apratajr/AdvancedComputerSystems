@@ -26,13 +26,18 @@ int main(int argc, char* argv[]) {
     std::vector<std::string> inputraw; // The input as it is in its txt
     std::vector<int> inputencoded; // The encoded input as it is in its txt
 
-    //createDictionary(filepath_in, dictpath, dictionary);
-    readDictionary(dictpath, dictionary);
-    //createEncodedFile(filepath_in, filepath_out, dictionary);
+    // Should make a command line option:
+    // 1 if you already have a dictionary file and an encoded column file, 0 if not
+    //---------------------------------------------------------------------------
+    // 1: readDict, readIn, readEnc -> dict, in, enc in memory
+    // 0: createDict (write to disk and mem), createEnc (disk only), readIn (mem), readEnc (mem) -> dict, in, enc in mem
 
-    const std::string searchterm = "wzulz";
+    //const std::string searchterm = "wzulz";
     //const std::string searchterm = "nsmgpo";
 
+    //createDictionary(filepath_in, dictpath, dictionary);
+    //createEncodedFile(filepath_in, filepath_out, dictionary);
+    readDictionary(dictpath, dictionary);
     readInputFile(filepath_in, inputraw);
     readEncodedFile(filepath_out, inputencoded);
 
@@ -54,8 +59,17 @@ int main(int argc, char* argv[]) {
     // duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     // std::cout << "ENCAVX Time elapsed: " << duration.count() << " usec." << std::endl;
 
-    std::vector<int> test = dictionary.getEncodingValuesWithPrefix("wz");
+    auto start = std::chrono::high_resolution_clock::now();
+    prefixSearchInput(inputraw, "wz");
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    std::cout << "VANSTD Time elapsed: " << duration.count() << " usec." << std::endl;
 
+    start = std::chrono::high_resolution_clock::now();
+    prefixSearchEncoded(inputencoded, dictionary, "wz");
+    stop = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    std::cout << "ENCSTD Time elapsed: " << duration.count() << " usec." << std::endl;
 
     std::cout.flush();
     return 0;

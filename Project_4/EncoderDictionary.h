@@ -61,7 +61,7 @@ public:
         std::vector<int> encodingValues;
         for (auto it = lower; it != upper; ++it) {
             encodingValues.push_back(it->second);
-            std::cout << it->first << std::endl;
+            //std::cout << it->first << std::endl;
         }
 
         return encodingValues;
@@ -236,20 +236,47 @@ void searchInput(const std::vector<std::string>& input_data, std::string target)
     }
 }
 
-// Standard naive approach to locating the desired encoding
+// Function to perform a vanilla PREFIX search on raw input in memory
+void prefixSearchInput(const std::vector<std::string>& input_data, std::string target_prefix) {
+    for (size_t i = 0; i < input_data.size(); ++i) {
+        // Check to see if the prefix is present for the currently examined column index
+        if (input_data[i].compare(0, target_prefix.length(), target_prefix) == 0) {
+            std::cout << "VANILLA String prefix " << target_prefix << " match found at location: " << i << std::endl;
+        }
+    }
+}
+
+// Standard naive search of encoded column
 void searchEncoded(const std::vector<int>& encoded_data, EncoderDictionary& d, std::string target) {
     // Get the encoding for the target string
-    int targetEncoding = d.getEncoding(target);
-    // Loop over encodings (integers)
+    int target_encoding = d.getEncoding(target);
+    // Loop over encoded data vector (integers)
     for (size_t i = 0; i < encoded_data.size(); ++i) {
         // Indivudually check each element to see if it has the encoding for the target
-        if (encoded_data[i] == targetEncoding) {
+        if (encoded_data[i] == target_encoding) {
             // If it does, output that we have found a match
             std::cout << "ENCSTD String " << target << " match found at location: " << i << std::endl;
         }
     }
 }
 
+// Standard naive PREFIX search of encoded column
+void prefixSearchEncoded(const std::vector<int>& encoded_data, EncoderDictionary& d, std::string target_prefix) {
+    // Get the encodings for the targets who match the prefix condition
+    std::vector<int> target_encodings = d.getEncodingValuesWithPrefix(target_prefix);
+    // Loop over encoded data vector (integers)
+    for (size_t i = 0; i < encoded_data.size(); ++i) {
+        // Loop over the target encodings vector
+        for (size_t j = 0; j < target_encodings.size(); ++j) {
+            // Match found?
+            if (encoded_data[i] == target_encodings[j]) {
+                std::cout << "ENCSTD String prefix " << target_prefix << " match found at location: " << i << std::endl;
+            }
+        }
+    }
+}
+
+// SIMD-accelerated search of encoded column
 void searchEncodedSIMD(const std::vector<int>& encoded_data, EncoderDictionary& d, const std::string& target) {
     // Get the encoding for the target string
     int targetEncoding = d.getEncoding(target);
