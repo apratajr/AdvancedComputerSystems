@@ -18,7 +18,7 @@
 #include <vector>
 #include <cmath>
 #include <mutex>
-#include <emmintrin.h> // SSE2 intrinsics
+#include <emmintrin.h>
 
 // Class for the encoding translation dictionary
 class EncoderDictionary {
@@ -122,7 +122,7 @@ void createDictionary(const std::string& filepath_in, const std::string& dictpat
     // Divide work over thread count and asynchronously build dictionary data structure
     for (size_t i = 0; i < num_threads; ++i) {
         size_t start = i * lines_per_thread;
-        size_t end = (i == num_threads-1) ? line_count-1 : start + lines_per_thread;
+        size_t end = (i == num_threads-1) ? line_count : start + lines_per_thread;
         threads.emplace_back([&, start, end](){ asyncProcessor(filepath_in, start, end, d); });
     }
 
@@ -284,8 +284,8 @@ int main(int argc, char* argv[]) {
     readDictionary(dictpath, dictionary);
     //createEncodedFile(filepath_in, filepath_out, dictionary);
 
-    //const std::string searchterm = "wzulz";
-    const std::string searchterm = "nsmgpo";
+    const std::string searchterm = "wzulz";
+    //const std::string searchterm = "nsmgpo";
 
     readInputFile(filepath_in, inputraw);
     readEncodedFile(filepath_out, inputencoded);
