@@ -279,29 +279,34 @@ void prefixSearchEncoded(const std::vector<int>& encoded_data, EncoderDictionary
 // SIMD-accelerated search of encoded column
 void searchEncodedSIMD(const std::vector<int>& encoded_data, EncoderDictionary& d, const std::string& target) {
     // Get the encoding for the target string
-    int targetEncoding = d.getEncoding(target);
+    int target_encoding = d.getEncoding(target);
 
     // Convert the target encoding to a vector for SIMD comparison
-    __m128i targetVec = _mm_set1_epi32(targetEncoding);
+    __m128i target_vec = _mm_set1_epi32(target_encoding);
 
     // Loop over encodings with SIMD this time
     for (size_t i = 0; i < encoded_data.size(); i += 4) {
         // Load 4 integers from encoded_data into a SIMD register
-        __m128i dataVec = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&encoded_data[i]));
+        __m128i data_vec = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&encoded_data[i]));
 
         // Compare each element in the SIMD register with the target encoding
-        __m128i result = _mm_cmpeq_epi32(dataVec, targetVec);
+        __m128i result = _mm_cmpeq_epi32(data_vec, target_vec);
 
         // Store the comparison result in an array
-        int comparisonResult[4];
-        _mm_storeu_si128(reinterpret_cast<__m128i*>(comparisonResult), result);
+        int comparison_result[4];
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(comparison_result), result);
 
         // Check each comparison result
         for (int j = 0; j < 4; ++j) {
-            if (comparisonResult[j] != 0) {
+            if (comparison_result[j] != 0) {
                 // If a match is found, output the location
                 std::cout << "ENCAVX String " << target << " match found at location: " << i + j << std::endl;
             }
         }
     }
+}
+
+// SIMD-accelerated PREFIX search of encoded column
+void prefixSearchEncodedSIMD(const std::vector<int>& encoded_data, EncoderDictionary& d, const std::string& target_prefix) {
+    // Implementation Here
 }
