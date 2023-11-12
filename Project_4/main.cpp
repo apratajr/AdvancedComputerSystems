@@ -18,6 +18,7 @@
 #include <vector>
 #include <cmath>
 #include <mutex>
+#include <emmintrin.h> // SSE2 intrinsics
 
 // Class for the encoding translation dictionary
 class EncoderDictionary {
@@ -135,7 +136,6 @@ void createDictionary(const std::string& filepath_in, const std::string& dictpat
     std::cout << "Encoding Complete. Time elapsed: " << duration.count() << " useconds." << std::endl;
 
     // Contruct dictionary text file (singlethreaded, otherwise mutex issues)
-    dict_out << std::hex; // Testing of encoded sizes and such
     for (const auto& entry : d.getDictionary()) {
         dict_out << entry.first << ":" << entry.second << '\n';
     }
@@ -181,13 +181,13 @@ void readDictionary(const std::string& dictpath_in, EncoderDictionary& d) {
     while (std::getline(dict_in, line)) {
         size_t kvp_split = line.find(':');
         std::string key = line.substr(0, kvp_split);
-        int val = std::stoi(line.substr(kvp_split+1), nullptr, 16);
+        int val = std::stoi(line.substr(kvp_split+1));
         d.getDictionary()[key] = val;
     }
 }
 
 // Function to read a vanilla column file and throw it in DRAM
-void readInputFile(const std::string& filepath_in, std::vector<std::string> input_data) {
+void readInputFile(const std::string& filepath_in, std::vector<std::string>& input_data) {
     std::ifstream file_in(filepath_in);
     if (!file_in.is_open()) {
         std::cerr << "Error: Could not open the input file " << filepath_in << '\n';
@@ -201,7 +201,7 @@ void readInputFile(const std::string& filepath_in, std::vector<std::string> inpu
 }
 
 // Functon to read an encoded file and throw it in DRAM
-void readEncodedFile(const std::string& filepath_in_enc, std::vector<std::string> encoded_data) {
+void readEncodedFile(const std::string& filepath_in_enc, std::vector<int>& encoded_data) {
     std::ifstream file_in_enc(filepath_in_enc);
     if (!file_in_enc.is_open()) {
         std::cerr << "Error: Could not open the encoded file " << filepath_in_enc << '\n';
@@ -209,9 +209,61 @@ void readEncodedFile(const std::string& filepath_in_enc, std::vector<std::string
     }
     std::string line;
     while (std::getline(file_in_enc, line)) {
-        encoded_data.push_back(line);
+        encoded_data.push_back(std::stoi(line));
     }
     file_in_enc.close();
+}
+
+// Function to perform a vanilla search on raw input in memory
+void searchInput(const std::vector<std::string>& input_data, std::string target) {
+    for (size_t i = 0; i < input_data.size(); ++i) {
+        if (input_data[i] == target) {
+            std::cout << "VANILLA String " << target << " match found at location: " << i << std::endl;
+        }
+    }
+}
+
+// Standard naive approach to locating the desired encoding
+void searchEncoded(const std::vector<int>& encoded_data, EncoderDictionary& d, std::string target) {
+    // Get the encoding for the target string
+    int targetEncoding = d.getEncoding(target);
+    // Loop over encodings (integers)
+    for (size_t i = 0; i < encoded_data.size(); ++i) {
+        // Indivudually check each element to see if it has the encoding for the target
+        if (encoded_data[i] == targetEncoding) {
+            // If it does, output that we have found a match
+            std::cout << "ENCSTD String " << target << " match found at location: " << i << std::endl;
+        }
+    }
+}
+
+void searchEncodedSIMD(const std::vector<int>& encoded_data, EncoderDictionary& d, const std::string& target) {
+    // Get the encoding for the target string
+    int targetEncoding = d.getEncoding(target);
+
+    // Convert the target encoding to a vector for SIMD comparison
+    __m128i targetVec = _mm_set1_epi32(targetEncoding);
+
+    // Loop over encodings with SIMD this time
+    for (size_t i = 0; i < encoded_data.size(); i += 4) {
+        // Load 4 integers from encoded_data into a SIMD register
+        __m128i dataVec = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&encoded_data[i]));
+
+        // Compare each element in the SIMD register with the target encoding
+        __m128i result = _mm_cmpeq_epi32(dataVec, targetVec);
+
+        // Store the comparison result in an array
+        int comparisonResult[4];
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(comparisonResult), result);
+
+        // Check each comparison result
+        for (int j = 0; j < 4; ++j) {
+            if (comparisonResult[j] != 0) {
+                // If a match is found, output the location
+                std::cout << "ENCAVX String " << target << " match found at location: " << i + j << std::endl;
+            }
+        }
+    }
 }
 
 int main(int argc, char* argv[]) {
@@ -230,7 +282,31 @@ int main(int argc, char* argv[]) {
 
     //createDictionary(filepath_in, dictpath, dictionary);
     readDictionary(dictpath, dictionary);
-    createEncodedFile(filepath_in, filepath_out, dictionary);
+    //createEncodedFile(filepath_in, filepath_out, dictionary);
+
+    //const std::string searchterm = "wzulz";
+    const std::string searchterm = "nsmgpo";
+
+    readInputFile(filepath_in, inputraw);
+    readEncodedFile(filepath_out, inputencoded);
+
+    auto start = std::chrono::high_resolution_clock::now();
+    searchInput(inputraw, searchterm);
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    std::cout << "VANSTD Time elapsed: " << duration.count() << " usec." << std::endl;
+
+    start = std::chrono::high_resolution_clock::now();
+    searchEncoded(inputencoded, dictionary, searchterm);
+    stop = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    std::cout << "ENCSTD Time elapsed: " << duration.count() << " usec." << std::endl;
+
+    start = std::chrono::high_resolution_clock::now();
+    searchEncodedSIMD(inputencoded, dictionary, searchterm);
+    stop = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    std::cout << "ENCAVX Time elapsed: " << duration.count() << " usec." << std::endl;
 
     std::cout.flush();
     return 0;
