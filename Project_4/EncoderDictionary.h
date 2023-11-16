@@ -7,7 +7,7 @@
 // and its helper functions.
 //
 
-#include "FStreamHelper.h" // File operaitons
+#include "FStreamHelper.h" // File operations
 #include <map>             // std::map
 #include <string>          // std::string 
 #include <mutex>           // std::mutex/std::lock_guard
@@ -47,6 +47,11 @@ public:
     // Function to retrieve a key encoding value
     int getEncoding(const std::string& key) {
         std::lock_guard<std::mutex> lock(dictionaryMutex); // Lock the mutex (this may be multithreaded eventually)
+        auto it = dictionary.find(key);
+        if (it == dictionary.end()) {
+            std::cout << "Key " << key << " does not exist in the dictionary." << "\n";
+            return -1;
+        }
         return dictionary.find(key)->second;
     }
 
@@ -195,59 +200,74 @@ void readEncodedFile(const std::string& filepath_in_enc, std::vector<int>& encod
     file_in_enc.close();
 }
 
+// ____ SEARCHING FUNCTIONS ____ //
+
 // Function to perform a vanilla search on raw input in memory
-void searchInput(const std::vector<std::string>& input_data, std::string target) {
+bool searchInput(const std::vector<std::string>& input_data, std::string target, std::vector<int>& target_locations) {
     for (size_t i = 0; i < input_data.size(); ++i) {
         if (input_data[i] == target) {
-            std::cout << "VANILLA String " << target << " match found at location: " << i << std::endl;
+            target_locations.push_back(i);
         }
     }
+    return (target_locations.size() != 0) ? true : false;
 }
 
 // Function to perform a vanilla PREFIX search on raw input in memory
-void prefixSearchInput(const std::vector<std::string>& input_data, std::string target_prefix) {
+bool prefixSearchInput(const std::vector<std::string>& input_data, std::string target_prefix, std::vector<int>& target_locations) {
     for (size_t i = 0; i < input_data.size(); ++i) {
         // Check to see if the prefix is present for the currently examined column index
         if (input_data[i].compare(0, target_prefix.length(), target_prefix) == 0) {
-            std::cout << "VANILLA String prefix " << target_prefix << " match found at location: " << i << std::endl;
+            target_locations.push_back(i);
         }
     }
+    return (target_locations.size() != 0) ? true : false;
 }
 
 // Standard naive search of encoded column
-void searchEncoded(const std::vector<int>& encoded_data, EncoderDictionary& d, std::string target) {
+bool searchEncoded(const std::vector<int>& encoded_data, EncoderDictionary& d, std::string target, std::vector<int>& target_locations) {
     // Get the encoding for the target string
     int target_encoding = d.getEncoding(target);
+    if (target_encoding == -1) {
+        return false;
+    }
     // Loop over encoded data vector (integers)
     for (size_t i = 0; i < encoded_data.size(); ++i) {
         // Indivudually check each element to see if it has the encoding for the target
         if (encoded_data[i] == target_encoding) {
             // If it does, output that we have found a match
-            std::cout << "ENCSTD String " << target << " match found at location: " << i << std::endl;
+            target_locations.push_back(i);
         }
     }
+    return true;
 }
 
 // Standard naive PREFIX search of encoded column
-void prefixSearchEncoded(const std::vector<int>& encoded_data, EncoderDictionary& d, std::string target_prefix) {
+bool prefixSearchEncoded(const std::vector<int>& encoded_data, EncoderDictionary& d, std::string target_prefix, std::vector<int>& target_locations) {
     // Get the encodings for the targets who match the prefix condition
     std::vector<int> target_encodings = d.getEncodingValuesWithPrefix(target_prefix);
+    if (target_encodings.size() == 0) {
+        return false;
+    }
     // Loop over encoded data vector (integers)
     for (size_t i = 0; i < encoded_data.size(); ++i) {
         // Loop over the target encodings vector
         for (size_t j = 0; j < target_encodings.size(); ++j) {
             // Match found?
             if (encoded_data[i] == target_encodings[j]) {
-                std::cout << "ENCSTD String prefix " << target_prefix << " match found at location: " << i << std::endl;
+                target_locations.push_back(i);
             }
         }
     }
+    return true;
 }
 
 // SIMD-accelerated search of encoded column
-void searchEncodedSIMD(const std::vector<int>& encoded_data, EncoderDictionary& d, const std::string& target) {
+bool searchEncodedSIMD(const std::vector<int>& encoded_data, EncoderDictionary& d, const std::string& target, std::vector<int>& target_locations) {
     // Get the encoding for the target string
     int target_encoding = d.getEncoding(target);
+    if (target_encoding == -1) {
+        return false;
+    }
 
     // Convert the target encoding to a vector for SIMD comparison
     __m128i target_vec = _mm_set1_epi32(target_encoding);
@@ -268,16 +288,20 @@ void searchEncodedSIMD(const std::vector<int>& encoded_data, EncoderDictionary& 
         for (int j = 0; j < 4; ++j) {
             if (comparison_result[j] != 0) {
                 // If a match is found, output the location
-                std::cout << "ENCAVX String " << target << " match found at location: " << i + j << std::endl;
+                target_locations.push_back(i+j);
             }
         }
     }
+    return true;
 }
 
 // SIMD-accelerated PREFIX search of encoded column
-void prefixSearchEncodedSIMD(const std::vector<int>& encoded_data, EncoderDictionary& d, const std::string& target_prefix) {
+bool prefixSearchEncodedSIMD(const std::vector<int>& encoded_data, EncoderDictionary& d, const std::string& target_prefix, std::vector<int>& target_locations) {
     // Get the encodings for the targets who match the prefix condition
     std::vector<int> target_encodings = d.getEncodingValuesWithPrefix(target_prefix);
+    if (target_encodings.size() == 0) {
+        return false;
+    }
 
     // Form a std::vector of target AVX2 vectors for SIMD comparison
     std::vector<__m128i> target_vecs;
@@ -302,9 +326,10 @@ void prefixSearchEncodedSIMD(const std::vector<int>& encoded_data, EncoderDictio
             for (int k = 0; k < 4; ++k) {
                 if (comparison_result[k] != 0) {
                     // If a match is found, output the location
-                    std::cout << "ENCAVX String " << target_prefix << " match found at location: " << i + k << std::endl;
+                    target_locations.push_back(i+k);
                 }
             }
         }
     }
+    return true;
 }

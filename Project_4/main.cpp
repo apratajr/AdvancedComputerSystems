@@ -30,9 +30,9 @@ int main(int argc, char* argv[]) {
     // 1: readDict, readIn, readEnc -> dict, in, enc in memory
     // 0: createDict (write to disk and mem), createEnc (disk only), readIn (mem), readEnc (mem) -> dict, in, enc in mem
 
-    //const std::string searchterm = "wzulz";
-    //const std::string searchterm = "nsmgpo";
-    const std::string pre = "ap";
+    // const std::string searchterm = "wzulz";
+    const std::string searchterm = "nsmgpo";
+    const std::string prefix = "ap";
 
     //createDictionary(filepath_in, dictpath, dictionary);
     //createEncodedFile(filepath_in, filepath_out, dictionary);
@@ -40,39 +40,112 @@ int main(int argc, char* argv[]) {
     readInputFile(filepath_in, inputraw);
     readEncodedFile(filepath_out, inputencoded);
 
-    // auto start = std::chrono::high_resolution_clock::now();
-    // searchInput(inputraw, searchterm);
-    // auto stop = std::chrono::high_resolution_clock::now();
-    // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-    // std::cout << "VANSTD Time elapsed: " << duration.count() << " usec." << std::endl;
-
-    // start = std::chrono::high_resolution_clock::now();
-    // searchEncoded(inputencoded, dictionary, searchterm);
-    // stop = std::chrono::high_resolution_clock::now();
-    // duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-    // std::cout << "ENCSTD Time elapsed: " << duration.count() << " usec." << std::endl;
-
-    // start = std::chrono::high_resolution_clock::now();
-    // searchEncodedSIMD(inputencoded, dictionary, searchterm);
-    // stop = std::chrono::high_resolution_clock::now();
-    // duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-    // std::cout << "ENCAVX Time elapsed: " << duration.count() << " usec." << std::endl;
-
+    // TESTING VANILLA STANDARD TARGET SEARCH
+    std::vector<int> hits;
+    std::cout << "\nSearching for target " << searchterm << " using method VANSTD" << "\n";
     auto start = std::chrono::high_resolution_clock::now();
-    prefixSearchInput(inputraw, pre);
+    if (!searchInput(inputraw, searchterm, hits)) {
+        std::cout << "Search target " << searchterm << " does not exist in the dataset." << "\n";
+        exit(0);
+    }
     auto stop = std::chrono::high_resolution_clock::now();
+    std::cout << "Search target " << searchterm << " found at location(s): ";
+    for (size_t i = 0; i < hits.size(); ++i) {
+        std::cout << hits[i] << " ";
+    }
+    std::cout << "\n";
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     std::cout << "VANSTD Time elapsed: " << duration.count() << " usec.\n" << std::endl;
 
+    // -- TESTING TARGET SEARCH --
+
+    // TESTING ENCODED STANDARD TARGET SEARCH
+    hits.clear();
+    std::cout << "Searching for target " << searchterm << " using method ENCSTD" << "\n";
     start = std::chrono::high_resolution_clock::now();
-    prefixSearchEncoded(inputencoded, dictionary, pre);
+    if (!searchEncoded(inputencoded, dictionary, searchterm, hits)) {
+        std::cout << "Search target " << searchterm << " does not exist in the dataset." << "\n";
+        exit(0);
+    }
     stop = std::chrono::high_resolution_clock::now();
+    std::cout << "Search target " << searchterm << " found at location(s): ";
+    for (size_t i = 0; i < hits.size(); ++i) {
+        std::cout << hits[i] << " ";
+    }
+    std::cout << "\n";
     duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     std::cout << "ENCSTD Time elapsed: " << duration.count() << " usec.\n" << std::endl;
 
+
+    // TESTING ENCODED SIMD TARGET SEARCH
+    hits.clear();
+    std::cout << "Searching for target " << searchterm << " using method ENCAVX" << "\n";
     start = std::chrono::high_resolution_clock::now();
-    prefixSearchEncodedSIMD(inputencoded, dictionary, pre);
+    if (!searchEncodedSIMD(inputencoded, dictionary, searchterm, hits)) {
+        std::cout << "Search target " << searchterm << " does not exist in the dataset." << "\n";
+        exit(0);
+    }
     stop = std::chrono::high_resolution_clock::now();
+    std::cout << "Search target " << searchterm << " found at location(s): ";
+    for (size_t i = 0; i < hits.size(); ++i) {
+        std::cout << hits[i] << " ";
+    }
+    std::cout << "\n";
+    duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    std::cout << "ENCAVX Time elapsed: " << duration.count() << " usec.\n" << std::endl;
+
+    // -- TESTING PREFIX SEARCH --
+
+    // TESTING VANILLA STANDARD PREFIX SEARCH
+    hits.clear();
+    std::cout << "Searching for targets matching prefix " << prefix << " using method VANSTD" << "\n";
+    start = std::chrono::high_resolution_clock::now();
+    if (!prefixSearchInput(inputraw, prefix, hits)) {
+        std::cout << "Targets matching prefix " << prefix << " do not exist in the dataset." << "\n";
+        exit(0);
+    }
+    stop = std::chrono::high_resolution_clock::now();
+    std::cout << "Targets matching prefix " << prefix << " found at location(s): ";
+    for (size_t i = 0; i < hits.size(); ++i) {
+        std::cout << hits[i] << " ";
+    }
+    std::cout << "\n";
+    duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    std::cout << "VANSTD Time elapsed: " << duration.count() << " usec.\n" << std::endl;
+
+
+    // TESTING ENCODED STANDARD PREFIX SEARCH
+    hits.clear();
+    std::cout << "Searching for targets matching prefix " << prefix << " using method ENCSTD" << "\n";
+    start = std::chrono::high_resolution_clock::now();
+    if (!prefixSearchEncoded(inputencoded, dictionary, prefix, hits)) {
+        std::cout << "Targets matching prefix " << prefix << " do not exist in the dataset." << "\n";
+        exit(0);
+    }
+    stop = std::chrono::high_resolution_clock::now();
+    std::cout << "Targets matching prefix " << prefix << " found at location(s): ";
+    for (size_t i = 0; i < hits.size(); ++i) {
+        std::cout << hits[i] << " ";
+    }
+    std::cout << "\n";
+    duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    std::cout << "ENCSTD Time elapsed: " << duration.count() << " usec.\n" << std::endl;
+
+
+    // TESTING ENCODED SIMD PREFIX SEARCH
+    hits.clear();
+    std::cout << "Searching for targets matching prefix " << prefix << " using method ENCAVX" << "\n";
+    start = std::chrono::high_resolution_clock::now();
+    if (!prefixSearchEncodedSIMD(inputencoded, dictionary, prefix, hits)) {
+        std::cout << "Targets matching prefix " << prefix << " do not exist in the dataset." << "\n";
+        exit(0);
+    }
+    stop = std::chrono::high_resolution_clock::now();
+    std::cout << "Targets matching prefix " << prefix << " found at location(s): ";
+    for (size_t i = 0; i < hits.size(); ++i) {
+        std::cout << hits[i] << " ";
+    }
+    std::cout << "\n";
     duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     std::cout << "ENCAVX Time elapsed: " << duration.count() << " usec.\n" << std::endl;
 
