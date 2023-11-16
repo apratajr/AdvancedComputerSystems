@@ -42,10 +42,10 @@ int main(int argc, char* argv[]) {
     std::cout << "Files loaded. Time elapsed: " << durationl.count() << " sec.\n" << std::endl;
 
     // TESTING PARAMETERS
-    // const std::string searchterm = "wzulz";
+    const std::string searchterm = "wzulz";
     // const std::string searchterm = "nsmgpo";
-    const std::string searchterm = "test";
-    const std::string prefix = "ap";
+    // const std::string searchterm = "test";
+    // const std::string prefix = "ap";
 
     // -- TESTING TARGET SEARCH --
 
