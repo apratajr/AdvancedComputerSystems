@@ -39,12 +39,6 @@ void compressFile(const std::string &inputFileName, const std::string &outputFil
     std::cout << "Compression successful. Compressed size: " << outputSize << " bytes." << std::endl;
 }
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <vector>
-#include <zlib.h>
-
 void decompressFile(const std::string &inputFileName, const std::string &outputFileName) {
     std::ifstream inputFile(inputFileName, std::ios::binary);
     std::ofstream outputFile(outputFileName, std::ios::binary);
