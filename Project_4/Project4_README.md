@@ -61,6 +61,7 @@ public:
 
 This stucture is simple to understand, and is effectively a wrapper for the standard C++ `std::map` structure. This wrapper encorporates automatic encoding generation, and mutexing. These functions are critical for the functioning of the system. The `mutex` is of course required for multithreaded construction of the encoding dictionary. The `nextValue` private member is used to set the next encoding in the sequence when we encounter a new string at encoding time.
 
+Two member functions are shown here, and they are both highly important for search functionality. The first, `EncoderDictionary::getEncoding` is extremely simple and will not be discussed. More interesting is `EncoderDictionary::getEncodingValuesWithPrefix`, which takes advantage of the ordered tree-based structure of the underlying `std::map` to perform a very efficient scan for prefixes. We first define lower and upper bound iterators which effectively encompass all strings that start with our prefix. Finally, there is a simple for loop to walk over the entire range of prefixes automatically. Again, this would be impossible if `value:encoding` pairs were not ordered properly (e.g. using a `std::unordered_map` - this revelation came from Prof. Zhang in office hours...). Initial development of the `EncoderDictionary` design used an unordered structure, and thankfully the change was not very difficult.
 
 ### Query
 Given a query term (`target` string), the program provides the function of locating the index locations of the term in the encoded file.
@@ -194,16 +195,60 @@ With a vector of encodings where our `target_prefix` condition is met, we then s
 The code for the SIMD implementation of encoded prefix scanning is extremely similar to the SIMD Query Search, except that it has an nested loop that checks each of the prefix matches, in the same manner as the regular encoding prefix scanning implementation. Understanding these two prior functions is equivalent to understanding this one. For this reason, I will spare you another 35 line block of code... although it is available at `Project_4\EncoderDictionary.h`.
 
 ## Analysis
-### Subsec1
-X
+This section will present and discuss the performance characteristics of the implementations for both query search and prefix scan. Of course, in all charts provided, *lower is better*, as we are dealing with function execution time.
 
-### Subsec2
-X
 
-## Sec3
-X
+### Query Search
+Query search as implemented in this experiment proved to be a total success. Importantly, all functions were checked for coherency with one another, to ensure that they were successfully evaluating the queries.  As shown in the chart below, the three methods tested on a small dataset (first 2000 lines of provided `Column.txt`) all execute consistently in the expected time range. VANSTD is slowest, ENCSTD is faster, and ENCAVX is fastest.
 
-### Subsec1
-X
-### Subsec2
-X
+<div style="text-align: center;">
+<img src="perf_query_smalldataset.png"></div>
+<br />
+
+This behavior scales perfectly to the full-sized (~1 GB) `Column.txt` file, as shown below.
+
+<div style="text-align: center;">
+<img src="perf_query_fulldataset.png"></div>
+<br />
+
+Individual run data reveals that, interestingly, the standard deviation of runtime decreases with input size. Also, the data suggests that the larger the input size, the larger the benefits of encoding-based querying strategies, which aligns with theory. On the full dataset, the nominal runtime reduction from VANSTD to ENCSTD is 62%, and the reduction from VANSTD to ENCAVX is over 73%!
+
+### Prefix Scan
+Prefix scanning was less successful than query searching in this experiment. Implementations appear correct, (available in previous sections) however runtime data suggests an error.
+
+The chart below shows the three methods tested on the same small dataset as before.
+
+<div style="text-align: center;">
+<img src="perf_prefix_smalldataset.png"></div>
+<br />
+
+This data is strange, because it suggests that (at least at this dataset size), standard vanilla scanning operations are consistently faster and more efficient than their encoded counterparts. This could be explained logically as the encoding overhead (dictionary) and encoding AVX overhead (dictionary, SIMD loading) outweighing benefits at such a small data size. Unfortunately, due to the current program design, a full-dataset run was impossible due to specific vectors never being cleared. Because these vectors never exited the global scope, the system would almost immediately run out of memory under testing of different methods, making it very difficult to acquire good data. However, we can make the assumption that if the design were improved to dynamically allocate and release memory for these vectors, the program would run as expected. In that case, we would likely see the scaling shown in the Query Search testing, where ENCAVX is the winner overall.
+
+Initially, I thought that perhaps the prefix scan functionality was broken in the encoded cases, which was causing some severe time sink. In testing, I found that the function *are* working as expected, and match the VANSTD implementation perfectly. Here is a window capture showing this coherency:
+
+<div style="text-align: center;">
+<img src="method_coherency.png"></div>
+<br />
+
+## Development and Design Failures
+Development was rough for a good portion of this project, despite the relatively simple codebase that I have to show for it. The first serious issue was my understanding of the project requirements, which was quickly cleared up with office hours and class discussion. Things like compression, memory/disk representation, and encoding schemes were slightly misunderstood enough to halt progress. Getting past these, I attempted (to no avail) to get multithreaded dictionary generation (encoding) to function.
+
+### Multithreaded Encoding Dictionary Generation
+The general idea behind multithreaded encoding is that unlike file writing, generating a dictionary in-memory should be able to be divided into concurrent unrelated threads. This is a basic concept, however my implementation as it stands fails to properly implement it. Increasing the number of threads utilized in my implementation actually causes an (approximately linear) *increase* in encoding time. This is highly unexpected, and indicates that there is certainly a problem. My conclusion based on hours of debugging is that mutexing is either implemented incorrectly or simply cannot be used with the structure I have designed for the encoding dictionary. This is related to the "I" in "ACID" from transaction theory discussed in lecture: Atomicity, Consistency, ***Isolation***, and Durability. Concurrent threads are interfering with each others' dictionary access. I believe this to a contention for resources: many threads are trying to access the dictionary at the same time, but all but one are locked by the mutex hold of the current execution thread. Initial revisions caused a complete deadlock, where the process would halt and be unable to recover due to the first thread failing to release its lock. The current revision *does* run, and the dictionary *is* correct, it is just very slow. This requires additional investigation.
+
+### Disk Integer Compression
+The Project Handout calls for integer compression to be used to further reduce the footprint of encoded data on the storage medium. A suggested option from office hours was FastPFor (https://github.com/lemire/FastPFor). This code does indeed appear to be what I need, however unfortunately (and yet again) my Windows-based system will not allow me to use this software, as I cannot build it. Linux my find a home on my boot drive soon...
+
+Out of curiosity, I did use the classic LZ comression scheme to attempt to reduce the data size using a simple script (not apart of the main project). Results showed that even this basic compression, not specifically suited to integers, resulted in a drop from just over a gigabyte to under half of one! This is a pretty good compression ratio in my opinion, especially considering that this algorithm is not even tailored to this type of data.
+
+<div style="display: flex; justify-content: space-between;">
+  <img src="encoded_plain_details.png" alt="Encoded Plain Details" style="max-width: 45%; height: 45%;">
+  <img src="encoded_compressed_details.png" alt="Encoded Compressed Details" style="max-width: 45%; height: 45%;">
+</div><br />
+
+## Conclusion and Final Remarks
+I learned a lot in this project, and it was actually rather enjoyable to work on. I honestly did not expect to see such a performance uplift when switching from plain text data to encoded integer representations when querying. Prefix scanning is of course a letdown, and without firther work to modify the test program and data structure, it cannot be said with certainty that performance would scale as expected for large inputs. Despite this, the implementations were interesting and enjoyable to work with.
+
+Experimenting with multithreading was also interesting (if not a little bit infuriating). It was my first real experience with mutexing, despite having trivially interacted with mutexes in past experiences. Learning that the data structure which I chose is inherently thread-unsafe was a bit concerning, but was a teaching experience.
+
+Overall, I learned a lot about the dictionary codec concept, and the supporting functions and structures that facilitate its functioning.
