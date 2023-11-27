@@ -11,7 +11,7 @@
 #include <vector>
 #include <iostream>
 #include <cmath>
-#include "lodepng.h"
+#include "lodepng.h" // https://github.com/lvandeve/lodepng/tree/master
 
 class Grayscale {
 private:
