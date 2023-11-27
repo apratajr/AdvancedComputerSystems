@@ -35,3 +35,4 @@
 #TestEnvironment\P4_Testing\*.txt
 Project_4/Data/*.txt
 TestEnvironment/P4_Testing/*.txt
+*.z
