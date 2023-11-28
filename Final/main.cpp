@@ -24,13 +24,13 @@ int main(void) {
     filename = "mario2grayscale.png";
     image.exportPNG(filename);
 
-    Grayscale image_g = invert(sobelEdgeDetect(image));
-    filename = "mario2edges.png";
-    image_g.exportPNG(filename);
+    Grayscale image_blur = gaussianBlurStrong(image);
+    filename = "mario2blur.png";
+    image_blur.exportPNG(filename);
 
-    // filename = "floweredgedetect.png";
-    // Grayscale newImage2 = sobelEdgeDetect(image2);
-    // newImage2.exportPNG(filename);
+    Grayscale image_g = (sobelEdgeDetect(image_blur));
+    filename = "mario2edgeswithblur.png";
+    image_g.exportPNG(filename);
 
     return 0;
 }

@@ -140,11 +140,51 @@ Grayscale gaussianBlur(const Grayscale& input) {
     unsigned width = input.getWidth();
     unsigned height = input.getHeight();
     Grayscale output(width, height);
-    for (unsigned y = 0; y < height; ++y) {
-        for (unsigned x = 0; x < width; ++x) {
-            unsigned char originalValue = input.getPixel(x, y);
-            unsigned char invertedValue = 255 - originalValue;
-            output.setPixel(x, y, invertedValue);
+    // Gaussian blur kernel
+    unsigned gaussian[3][3] = {{1, 2, 1}, {2, 4, 2}, {1, 2, 1}};
+    // Iterate over the input image, excluding edges (kernel would overlap image)
+    for (unsigned y = 1; y < height - 1; ++y) {
+        for (unsigned x = 1; x < width - 1; ++x) {
+            unsigned sum = 0;
+
+            // Perform convolution (input * sorbel kernels)
+            for (unsigned a = 0; a < 3; ++a) {
+                for (unsigned b = 0; b < 3; ++b) {
+                    unsigned char input_pixel = input.getPixel(x + a - 1, y + b - 1);
+                    sum += gaussian[a][b] * input_pixel;
+                }
+            }
+            output.setPixel(x, y, (int)sum/16);
+        }
+    }
+    return output;
+}
+
+Grayscale gaussianBlurStrong(const Grayscale& input) {
+    unsigned width = input.getWidth();
+    unsigned height = input.getHeight();
+    Grayscale output(width, height);
+    // Gaussian blur kernel
+    int gaussian[5][5] = {{1, 4, 6, 4, 1},
+                          {4, 16, 24, 16, 4},
+                          {6, 24, 36, 24, 6},
+                          {4, 16, 24, 16, 4},
+                          {1, 4, 6, 4, 1}};
+    // Iterate over the input image, excluding edges (kernel would overlap image)
+    for (unsigned y = 2; y < height - 2; ++y) {
+        for (unsigned x = 2; x < width - 2; ++x) {
+            unsigned sum = 0;
+            unsigned weightSum = 0;
+
+            // Perform convolution (input * Gaussian kernel)
+            for (int a = -2; a <= 2; ++a) {
+                for (int b = -2; b <= 2; ++b) {
+                    unsigned char input_pixel = input.getPixel(x + a, y + b);
+                    sum += gaussian[a + 2][b + 2] * input_pixel;
+                    weightSum += gaussian[a + 2][b + 2];
+                }
+            }
+            output.setPixel(x, y, static_cast<unsigned char>(sum / weightSum));
         }
     }
     return output;
@@ -176,7 +216,8 @@ Grayscale sobelEdgeDetect(const Grayscale& input) {
             // Magnitude of convolution result (Sobel gradient approximation)
             int mag = (int)sqrt(sum_x * sum_x + sum_y * sum_y);
 
-            output.setPixel(x, y, (mag > 64) ? 255 : 0);
+            // output.setPixel(x, y, (mag > 32) ? 255 : 0);
+            output.setPixel(x, y, (int)mag);
         }
     }
     return output;
