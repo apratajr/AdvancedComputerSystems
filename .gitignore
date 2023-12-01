@@ -36,3 +36,7 @@
 Project_4/Data/*.txt
 TestEnvironment/P4_Testing/*.txt
 *.z
+TestEnvironment/P4_Testing/mainmultithreaded.cpp
+TestEnvironment/P4_Testing/mainzlibtest.cpp
+TestEnvironment/P4_Testing/mainzlibtest2.cpp
+TestEnvironment/P4_Testing/test.cpp
