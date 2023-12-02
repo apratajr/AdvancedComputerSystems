@@ -28,17 +28,5 @@ int main(int argc, char* argv[]) {
     // Export the final processed image to the output
     image_edges.exportPNG((std::string)argv[2]);
 
-    int radius = 2;
-    double** kernel = generateGaussianKernel(radius, 1.0);
-
-    for (int i = 0; i < 2*radius+1; i++) {
-        for (int j = 0; j < 2*radius+1; j++) {
-            std::cout << kernel[i][j] << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    destroyGaussianKernel(kernel, radius);
-
     return 0;
 }

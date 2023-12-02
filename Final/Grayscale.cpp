@@ -125,12 +125,14 @@ Grayscale invert(const Grayscale& input) {
 }
 
 // Apply Gaussian Blur
-Grayscale gaussianBlur(const Grayscale& input) {
+Grayscale gaussianBlur3x3(const Grayscale& input) {
     unsigned width = input.getWidth();
     unsigned height = input.getHeight();
     Grayscale output(width, height);
     // Gaussian blur kernel
-    unsigned gaussian[3][3] = {{1, 2, 1}, {2, 4, 2}, {1, 2, 1}};
+    unsigned gaussian[3][3] = {{1, 2, 1},
+                               {2, 4, 2}, 
+                               {1, 2, 1}};
     // Iterate over the input image, excluding edges (kernel would overlap image)
     for (unsigned y = 1; y < height - 1; ++y) {
         for (unsigned x = 1; x < width - 1; ++x) {
@@ -149,16 +151,16 @@ Grayscale gaussianBlur(const Grayscale& input) {
     return output;
 }
 
-Grayscale gaussianBlurStrong(const Grayscale& input) {
+Grayscale gaussianBlur5x5(const Grayscale& input) {
     unsigned width = input.getWidth();
     unsigned height = input.getHeight();
     Grayscale output(width, height);
     // Gaussian blur kernel
-    int gaussian[5][5] = {{1, 4, 6, 4, 1},
-                          {4, 16, 24, 16, 4},
-                          {6, 24, 36, 24, 6},
-                          {4, 16, 24, 16, 4},
-                          {1, 4, 6, 4, 1}};
+    int gaussian[5][5] = {{1, 4,  7,  4, 1},
+                          {4, 16, 26, 16, 4},
+                          {7, 26, 41, 26, 7},
+                          {4, 16, 26, 16, 4},
+                          {1, 4,  7,  4, 1}};
     // Iterate over the input image, excluding edges (kernel would overlap image)
     for (unsigned y = 2; y < height - 2; ++y) {
         for (unsigned x = 2; x < width - 2; ++x) {
@@ -171,6 +173,38 @@ Grayscale gaussianBlurStrong(const Grayscale& input) {
                     unsigned char input_pixel = input.getPixel(x + a, y + b);
                     sum += gaussian[a + 2][b + 2] * input_pixel;
                     weightSum += gaussian[a + 2][b + 2];
+                }
+            }
+            output.setPixel(x, y, static_cast<unsigned char>(sum / weightSum));
+        }
+    }
+    return output;
+}
+
+Grayscale gaussianBlur7x7(const Grayscale& input) {
+    unsigned width = input.getWidth();
+    unsigned height = input.getHeight();
+    Grayscale output(width, height);
+    // Gaussian blur kernel
+    int gaussian[7][7] = {{0, 0,  1,  2,   1,  0,  0},
+                          {0, 3,  13, 22,  13, 3,  0},
+                          {1, 13, 59, 97,  59, 13, 1},
+                          {2, 22, 97, 159, 97, 22, 2},
+                          {1, 13, 59, 97,  59, 13, 1},
+                          {0, 3,  13, 22,  13, 3,  0},
+                          {0, 0,  1,  2,   1,  0,  0}};
+    // Iterate over the input image, excluding edges (kernel would overlap image)
+    for (unsigned y = 2; y < height - 2; ++y) {
+        for (unsigned x = 2; x < width - 2; ++x) {
+            unsigned sum = 0;
+            unsigned weightSum = 0;
+
+            // Perform convolution (input * Gaussian kernel)
+            for (int a = -3; a <= 3; ++a) {
+                for (int b = -3; b <= 3; ++b) {
+                    unsigned char input_pixel = input.getPixel(x + a, y + b);
+                    sum += gaussian[a + 3][b + 3] * input_pixel;
+                    weightSum += gaussian[a + 3][b + 3];
                 }
             }
             output.setPixel(x, y, static_cast<unsigned char>(sum / weightSum));
@@ -210,41 +244,4 @@ Grayscale sobelEdgeDetect(const Grayscale& input) {
         }
     }
     return output;
-}
-
-double** generateGaussianKernel(int radius, double stddev) {
-    // Calculate the size of the kernel
-    int size = 2 * radius + 1;
-
-    // Allocate memory for the kernel
-    double** kernel = new double*[size];
-    for (int i = 0; i < size; ++i) {
-        kernel[i] = new double[size];
-    }
-
-    // Calculate the values for the Gaussian kernel
-    double sum = 0;
-    for (int i = -radius; i <= radius; ++i) {
-        for (int j = -radius; j <= radius; ++j) {
-            double value = exp(-(i * i + j * j) / (2 * stddev * stddev));
-            value /= (2 * M_PI * stddev * stddev);
-            kernel[i + radius][j + radius] = value;
-            sum += value;
-        }
-    }
-    for (int x = 0; x < size; x++) {
-        for (int y = 0; y < size; y++) {
-            kernel[x][y] /= sum;
-        }
-    }
-
-    return kernel;
-}
-
-void destroyGaussianKernel(double** kernel, int radius) {
-    int size = 2 * radius + 1;
-    for (int i = 0; i < size; ++i) {
-        delete[] kernel[i];
-    }
-    delete[] kernel;
 }
