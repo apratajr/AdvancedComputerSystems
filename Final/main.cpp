@@ -9,28 +9,24 @@
 
 #include "Grayscale.h" // Image data structure
 
-int main(void) {
+int main(int argc, char* argv[]) {
+    if (argc < 4) { // Ensure correct commandline arguments
+        std::cerr << "Usage: " << argv[0] << " <path/to/input_image.png>"
+            " <path/to/output_image.png> <operation [0-9]>" << std::endl;
+        return 1;   // Return an error code
+    }
 
-    // Random testing for now, functions as intended!
+    // Create a Grayscale object from input PNG
+    Grayscale input_image((std::string)argv[1]);
 
-    // Grayscale image(100, 100);
-    // image.setPixel(50, 50, 255);
-    // unsigned char pixval = image.getPixel(50, 50);
-    // std::cout << "val is " << (int)pixval << " out of 255" << std::endl;
+    // Create a new Grayscale object that performs an operation on the input
+    Grayscale image_blur_strong = gaussianBlurStrong(input_image);
 
-    std::string filename = "mario2.png";
-    Grayscale image(filename);
+    // Create a new Grayscale object that performs an operation on the input
+    Grayscale image_edges = (sobelEdgeDetect(image_blur_strong));
 
-    filename = "mario2grayscale.png";
-    image.exportPNG(filename);
-
-    Grayscale image_blur = gaussianBlurStrong(image);
-    filename = "mario2blur.png";
-    image_blur.exportPNG(filename);
-
-    Grayscale image_g = (sobelEdgeDetect(image_blur));
-    filename = "mario2edgeswithblur.png";
-    image_g.exportPNG(filename);
+    // Export the final processed image to the output
+    image_edges.exportPNG((std::string)argv[2]);
 
     return 0;
 }
