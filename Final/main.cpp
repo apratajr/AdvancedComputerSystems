@@ -20,13 +20,13 @@ int main(int argc, char* argv[]) {
     Grayscale input_image((std::string)argv[1]);
 
     // Create a new Grayscale object that performs an operation on the input
-    Grayscale image_blur_strong = gaussianBlurStrong(input_image);
+    Grayscale image_blur_3 = detectCorners(invert(input_image), 10);
+    image_blur_3.exportPNG((std::string)argv[2]);
+    // // Create a new Grayscale object that performs an operation on the input
+    // Grayscale image_edges = (sobelEdgeDetect(image_blur_3));
 
-    // Create a new Grayscale object that performs an operation on the input
-    Grayscale image_edges = (sobelEdgeDetect(image_blur_strong));
-
-    // Export the final processed image to the output
-    image_edges.exportPNG((std::string)argv[2]);
+    // // Export the final processed image to the output
+    // image_edges.exportPNG((std::string)argv[2]);
 
     return 0;
 }

@@ -34,8 +34,10 @@ public:
 };
 
 Grayscale invert(const Grayscale& input);
-Grayscale gaussianBlur(const Grayscale& input);
-Grayscale gaussianBlurStrong(const Grayscale& input);
+Grayscale gaussianBlur(const Grayscale& input, const int kernelSize);
+Grayscale meanBlur(const Grayscale& input);
 Grayscale sobelEdgeDetect(const Grayscale& input);
-double** generateGaussianKernel(int radius, double stddev);
-void destroyGaussianKernel(double** kernel, int radius);
+Grayscale contour(const Grayscale& input);
+Grayscale detectCorners(const Grayscale& inputImage, double threshold);
+Grayscale convolution(const Grayscale& input, const std::vector<std::vector<int>>& kernel);
+

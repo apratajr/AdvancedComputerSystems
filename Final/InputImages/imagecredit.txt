@@ -1,2 +1,4 @@
-mario: https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.stickpng.com%2Fimg%2Fgames%2Fnew-super-mario-bros%2Fmario&psig=AOvVaw15JpG9j9GJCsMUbXA8aaTb&ust=1701147547101000&source=images&cd=vfe&opi=89978449&ved=0CBQQjhxqFwoTCNDX8Muy44IDFQAAAAAdAAAAABA7
-flower: https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.pinterest.com%2Fpin%2F263953228139551660%2F&psig=AOvVaw1ikU3H_XImeHidxYrOQDE5&ust=1701147906200000&source=images&cd=vfe&opi=89978449&ved=0CBQQjhxqFwoTCNDX4_az44IDFQAAAAAdAAAAABAD
+mario:    https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.stickpng.com%2Fimg%2Fgames%2Fnew-super-mario-bros%2Fmario&psig=AOvVaw15JpG9j9GJCsMUbXA8aaTb&ust=1701147547101000&source=images&cd=vfe&opi=89978449&ved=0CBQQjhxqFwoTCNDX8Muy44IDFQAAAAAdAAAAABA7
+flower:    https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.pinterest.com%2Fpin%2F263953228139551660%2F&psig=AOvVaw1ikU3H_XImeHidxYrOQDE5&ust=1701147906200000&source=images&cd=vfe&opi=89978449&ved=0CBQQjhxqFwoTCNDX4_az44IDFQAAAAAdAAAAABAD
+logo:     https://upload.wikimedia.org/wikipedia/commons/c/c7/Ford-Motor-Company-Logo.png
+building: https://setosa.io/ev/image-kernels/
