@@ -7,118 +7,107 @@
 // as well as necessary helper functions.
 //
 
-#include <string>
-#include <vector>
-#include <iostream>
-#include <cmath>
-#include "lodepng.h" // https://github.com/lvandeve/lodepng/tree/master
+#include "Grayscale.h"
 
-class Grayscale {
-private:
-    unsigned width;
-    unsigned height;
-    unsigned char* data; // Use unsigned char for pixel values (0-255)
+// Constructor given W, H
+Grayscale::Grayscale(int w, int h) : width(w), height(h) {
+    // Allocate memory for the image data
+    data = new unsigned char[width * height];
+}
 
-public:
-    // Constructor given W, H
-    Grayscale(int w, int h) : width(w), height(h) {
-        // Allocate memory for the image data
-        data = new unsigned char[width * height];
-    }
-    // Construction given an existing PNG path
-    Grayscale(const std::string& filename) {
-        std::vector<unsigned char> png;   // Entire PNG image (in PNG format)
-        std::vector<unsigned char> image; // Actual image (raw pixels)
+// Constructor given an existing PNG path
+Grayscale::Grayscale(const std::string& filename) {
+    std::vector<unsigned char> png;   // Entire PNG image (in PNG format)
+    std::vector<unsigned char> image; // Actual image (raw pixels)
 
-        // Load and decode
-        unsigned error = lodepng::load_file(png, filename);
-        if(!error) error = lodepng::decode(image, width, height, png);
+    // Load and decode
+    unsigned error = lodepng::load_file(png, filename);
+    if(!error) error = lodepng::decode(image, width, height, png);
 
-        if (error) {
-            std::cerr << "Error loading PNG file: " << lodepng_error_text(error) << std::endl;
-            std::exit(EXIT_FAILURE);
-        }
-
-        // Allocate memory for the image data
-        data = new unsigned char[width * height];
-
-        // Convert RGBA input image (from lodepng) to grayscale and store in data
-        for (size_t i = 0; i < image.size(); i += 4) {
-            // RGB->Grayscale formula from International Telecom Union Rec.709
-            // Gray = 0.2126 * Red + 0.7152 * Green + 0.0722 * Blue
-            data[i / 4] = static_cast<unsigned char>(std::round(
-                0.2126 * image[i] + 0.7152 * image[i + 1] + 0.0722 * image[i + 2]
-            )); // Done because data is stored as 4 bytes RGBA RGBA RGBA ...
-        }
+    if (error) {
+        std::cerr << "Error loading PNG file: " << lodepng_error_text(error) << std::endl;
+        std::exit(EXIT_FAILURE);
     }
 
-    // Destructor
-    ~Grayscale() {
-        // Deallocate memory when the object is destroyed
-        delete[] data;
+    // Allocate memory for the image data
+    data = new unsigned char[width * height];
+
+    // Convert RGBA input image (from lodepng) to grayscale and store in data
+    for (size_t i = 0; i < image.size(); i += 4) {
+        // RGB->Grayscale formula from International Telecom Union Rec.709
+        // Gray = 0.2126 * Red + 0.7152 * Green + 0.0722 * Blue
+        data[i / 4] = static_cast<unsigned char>(std::round(
+            0.2126 * image[i] + 0.7152 * image[i + 1] + 0.0722 * image[i + 2]
+        )); // Done because data is stored as 4 bytes RGBA RGBA RGBA ...
+    }
+}
+
+// Destructor
+Grayscale::~Grayscale() {
+    // Deallocate memory when the object is destroyed
+    delete[] data;
+}
+
+// Export a Grayscale object to PNG given a filename
+void Grayscale::exportPNG(const std::string& filename) {
+    // Create vector to hold PNG image
+    std::vector<unsigned char> png;
+
+    // Convert grayscale data to RGBA format (PNG uses 4 channels: Red, Green, Blue, Alpha)
+    std::vector<unsigned char> imageRGBA;
+    for (size_t i = 0; i < width * height; ++i) {
+        // Assign the same grayscale value to Red, Green, Blue, and set Alpha to 255 (fully opaque)
+        imageRGBA.push_back(data[i]); // PNG R
+        imageRGBA.push_back(data[i]); // PNG G
+        imageRGBA.push_back(data[i]); // PNG B
+        imageRGBA.push_back(255);     // PNG A
     }
 
-    // Export a Grayscale object to PNG given a filename
-    void exportPNG(const std::string& filename) {
-        // Create vector to hold PNG image
-        std::vector<unsigned char> png;
+    // Encode the image to PNG format
+    unsigned error = lodepng::encode(png, imageRGBA, width, height);
 
-        // Convert grayscale data to RGBA format (PNG uses 4 channels: Red, Green, Blue, Alpha)
-        std::vector<unsigned char> imageRGBA;
-        for (size_t i = 0; i < width * height; ++i) {
-            // Assign the same grayscale value to Red, Green, Blue, and set Alpha to 255 (fully opaque)
-            imageRGBA.push_back(data[i]); // PNG R
-            imageRGBA.push_back(data[i]); // PNG G
-            imageRGBA.push_back(data[i]); // PNG B
-            imageRGBA.push_back(255);     // PNG A
-        }
-
-        // Encode the image to PNG format
-        unsigned error = lodepng::encode(png, imageRGBA, width, height);
-
-        if (error) {
-            std::cerr << "Error encoding PNG file: " << lodepng_error_text(error) << std::endl;
-            std::exit(EXIT_FAILURE);
-        }
-
-        // Write the PNG data to a file
-        error = lodepng::save_file(png, filename);
-
-        if (error) {
-            std::cerr << "Error saving PNG file: " << lodepng_error_text(error) << std::endl;
-            std::exit(EXIT_FAILURE);
-        }
+    if (error) {
+        std::cerr << "Error encoding PNG file: " << lodepng_error_text(error) << std::endl;
+        std::exit(EXIT_FAILURE);
     }
 
-    // Set the pixel value at coordinates (x, y)
-    void setPixel(unsigned x, unsigned y, unsigned char value) {
-        if (x < width && y < height) {
-            data[y * width + x] = value;
-        } else {
-            std::cerr << "Invalid pixel coordinates." << std::endl;
-        }
-    }
+    // Write the PNG data to a file
+    error = lodepng::save_file(png, filename);
 
-    // Get the pixel value at coordinates (x, y)
-    unsigned char getPixel(unsigned x, unsigned y) const {
-        if (x < width && y < height) {
-            return data[y * width + x];
-        } else {
-            std::cerr << "Invalid pixel coordinates." << std::endl;
-            return 0; // Return 0 for out-of-bounds access
-        }
+    if (error) {
+        std::cerr << "Error saving PNG file: " << lodepng_error_text(error) << std::endl;
+        std::exit(EXIT_FAILURE);
     }
+}
 
-    // Get the width of the image
-    unsigned getWidth() const {
-        return width;
+// Set the pixel value at coordinates (x, y)
+void Grayscale::setPixel(unsigned x, unsigned y, unsigned char value) {
+    if (x < width && y < height) {
+        data[y * width + x] = value;
+    } else {
+        std::cerr << "Invalid pixel coordinates." << std::endl;
     }
+}
 
-    // Get the height of the image
-    unsigned getHeight() const {
-        return height;
+// Get the pixel value at coordinates (x, y)
+unsigned char Grayscale::getPixel(unsigned x, unsigned y) const {
+    if (x < width && y < height) {
+        return data[y * width + x];
+    } else {
+        std::cerr << "Invalid pixel coordinates." << std::endl;
+        return 0; // Return 0 for out-of-bounds access
     }
-};
+}
+
+// Get the width of the image
+unsigned Grayscale::getWidth() const {
+    return width;
+}
+
+// Get the height of the image
+unsigned Grayscale::getHeight() const {
+    return height;
+}
 
 // Image inverter (created for testing I/O)
 Grayscale invert(const Grayscale& input) {
