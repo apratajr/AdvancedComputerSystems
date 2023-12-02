@@ -278,21 +278,24 @@ Grayscale sobelOperator(const Grayscale& input) {
 Grayscale convolution(const Grayscale& input, const std::vector<std::vector<int>>& kernel) {
     unsigned width = input.getWidth();
     unsigned height = input.getHeight();
+    int radius = kernel.size() / 2;
     Grayscale output(width, height);
 
-    // Iterate over the input image, excluding edges (kernel would overlap image)
-    for (unsigned y = kernel.size() / 2; y < height - kernel.size() / 2; ++y) {
-        for (unsigned x = kernel[0].size() / 2; x < width - kernel[0].size() / 2; ++x) {
-            int sum = 0;
-
+    // Iterate over the input image, excluding edges to prevent kernel overlap of invalid memory
+    for (unsigned y = radius; y < height - radius; ++y) {
+        for (unsigned x = radius; x < width - radius; ++x) {
+            unsigned sum = 0;
+            unsigned weightSum = 0;
             // Perform convolution (input * kernel)
-            for (int a = -kernel.size() / 2; a <= kernel.size() / 2; ++a) {
-                for (int b = -kernel[0].size() / 2; b <= kernel[0].size() / 2; ++b) {
+            for (int a = -radius; a <= radius; ++a) {
+                // Because kernels are square, we can assume radius in both directions is the same
+                for (int b = -radius; b <= radius; ++b) {
                     unsigned char input_pixel = input.getPixel(x + a, y + b);
-                    sum += kernel[a + kernel.size() / 2][b + kernel[0].size() / 2] * input_pixel;
+                    sum += kernel[a + radius][b + radius] * input_pixel;
+                    weightSum += kernel[a + radius][b + radius];
                 }
             }
-            output.setPixel(x, y, static_cast<unsigned char>(std::abs(sum)));
+            output.setPixel(x, y, static_cast<unsigned char>(sum / weightSum));
         }
     }
     return output;

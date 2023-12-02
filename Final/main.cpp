@@ -16,14 +16,21 @@ int main(int argc, char* argv[]) {
         return 1;   // Return an error code
     }
 
+    const std::vector<std::vector<int>> mean =   {{1, 1, 1, 1, 1},
+                                            {1, 1, 1, 1, 1},
+                                            {1, 1, 1, 1, 1},
+                                            {1, 1, 1, 1, 1},
+                                            {1, 1, 1, 1, 1}};
+
     // Create a Grayscale object from input PNG
     Grayscale input_image((std::string)argv[1]);
 
-    Grayscale histeq = histogramEqualization(input_image);
-    
-    Grayscale image = medianFilter(histeq, 3);
+    Grayscale convmean = convolution(input_image, mean);
 
-    image.exportPNG((std::string)argv[2]);
+    Grayscale regmean = meanBlur(input_image);
+
+    convmean.exportPNG((std::string)"./OutputImages/convmean.png");
+    regmean.exportPNG((std::string)"./OutputImages/regmean.png");
 
     return 0;
 }
