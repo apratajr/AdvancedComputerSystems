@@ -25,7 +25,8 @@ Grayscale::Grayscale(const std::string& filename) {
     if(!error) error = lodepng::decode(image, width, height, png);
 
     if (error) {
-        std::cerr << "Error loading PNG file: " << lodepng_error_text(error) << std::endl;
+        std::cerr << "[Grayscale::Grayscale] Error loading PNG file: "
+                  << lodepng_error_text(error) << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
@@ -67,7 +68,8 @@ void Grayscale::exportPNG(const std::string& filename) {
     unsigned error = lodepng::encode(png, imageRGBA, width, height);
 
     if (error) {
-        std::cerr << "Error encoding PNG file: " << lodepng_error_text(error) << std::endl;
+        std::cerr << "[Grayscale::exportPNG] Error encoding PNG file: "
+                  << lodepng_error_text(error) << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
@@ -75,7 +77,8 @@ void Grayscale::exportPNG(const std::string& filename) {
     error = lodepng::save_file(png, filename);
 
     if (error) {
-        std::cerr << "Error saving PNG file: " << lodepng_error_text(error) << std::endl;
+        std::cerr << "[Grayscale::exportPNG] Error saving PNG file: "
+                  << lodepng_error_text(error) << std::endl;
         std::exit(EXIT_FAILURE);
     }
 }
@@ -85,7 +88,7 @@ void Grayscale::setPixel(unsigned x, unsigned y, unsigned char value) {
     if (x < width && y < height) {
         data[y * width + x] = value;
     } else {
-        std::cerr << "Invalid pixel coordinates." << std::endl;
+        std::cerr << "[Grayscale::setPixel] Invalid pixel coordinates." << std::endl;
     }
 }
 
@@ -94,7 +97,7 @@ unsigned char Grayscale::getPixel(unsigned x, unsigned y) const {
     if (x < width && y < height) {
         return data[y * width + x];
     } else {
-        std::cerr << "Invalid pixel coordinates." << std::endl;
+        std::cerr << "[Grayscale::getPixel] Invalid pixel coordinates." << std::endl;
         return 0; // Return 0 for out-of-bounds access
     }
 }
@@ -133,6 +136,7 @@ Grayscale gaussianBlur(const Grayscale& input, const int kernelSize) {
     // Choose the Gaussian blur kernel based on the provided size
     std::vector<std::vector<int>> gaussianKernel;
     int kernelRadius;
+    // https://www.youtube.com/watch?v=C_zFhWdM4ic
     switch (kernelSize) {
         case 3:
             gaussianKernel = {{1, 2, 1},
@@ -189,8 +193,12 @@ Grayscale meanBlur(const Grayscale& input) {
     unsigned width = input.getWidth();
     unsigned height = input.getHeight();
     Grayscale output(width, height);
-    // Mean blur kernel (AVERAGE!)
-    int mean[5][5] = {{1, 1, 1, 1, 1}, {1, 1, 1, 1, 1}, {1, 1, 1, 1, 1}, {1, 1, 1, 1, 1}, {1, 1, 1, 1, 1}};
+    // Mean blur kernel (AVERAGE!) - 5x5
+    int mean[5][5] = {{1, 1, 1, 1, 1},
+                      {1, 1, 1, 1, 1},
+                      {1, 1, 1, 1, 1},
+                      {1, 1, 1, 1, 1},
+                      {1, 1, 1, 1, 1}};
     // Iterate over the input image, excluding edges (kernel would overlap image)
     for (unsigned y = 2; y < height - 2; ++y) {
         for (unsigned x = 2; x < width - 2; ++x) {
@@ -208,13 +216,15 @@ Grayscale meanBlur(const Grayscale& input) {
     return output;
 }
 
-// Contour/edge function
-Grayscale contour(const Grayscale& input) {
+// Contour/edge function - Laplacian operator
+Grayscale laplacianOperator(const Grayscale& input) {
     unsigned width = input.getWidth();
     unsigned height = input.getHeight();
     Grayscale output(width, height);
-    // Mean blur kernel (AVERAGE!)
-    int outline[3][3] = {{-1, -1, -1}, {-1, 8, -1}, {-1, -1, -1}};
+    // https://www.researchgate.net/figure/Two-commonly-used-discrete-approximations-to-the-Laplacian-filter_fig1_261459927
+    int laplacian[3][3] = {{-1, -1, -1},
+                           {-1,  8, -1},
+                           {-1, -1, -1}};
     // Iterate over the input image, excluding edges (kernel would overlap image)
     for (unsigned y = 1; y < height - 1; ++y) {
         for (unsigned x = 1; x < width - 1; ++x) {
@@ -222,7 +232,7 @@ Grayscale contour(const Grayscale& input) {
             for (unsigned a = 0; a < 3; ++a) {
                 for (unsigned b = 0; b < 3; ++b) {
                     unsigned char input_pixel = input.getPixel(x + a - 1, y + b - 1);
-                    sum += outline[a][b] * input_pixel;
+                    sum += laplacian[a][b] * input_pixel;
                 }
             }
             output.setPixel(x, y, sum);
@@ -232,11 +242,12 @@ Grayscale contour(const Grayscale& input) {
 }
 
 // Apply the Sobel Operator
-Grayscale sobelEdgeDetect(const Grayscale& input) {
+Grayscale sobelOperator(const Grayscale& input) {
     unsigned width = input.getWidth();
     unsigned height = input.getHeight();
     Grayscale output(width, height);
     // Sobel operator kernels
+    // https://www.youtube.com/watch?v=uihBwtPIBxM
     int sobel_x[3][3] = {{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}};
     int sobel_y[3][3] = {{-1, -2, -1}, {0, 0, 0}, {1, 2, 1}};
     // Iterate over the input image, excluding edges (kernel would overlap image)
