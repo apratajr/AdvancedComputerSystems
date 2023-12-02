@@ -19,14 +19,11 @@ int main(int argc, char* argv[]) {
     // Create a Grayscale object from input PNG
     Grayscale input_image((std::string)argv[1]);
 
-    // Create a new Grayscale object that performs an operation on the input
-    Grayscale image_blur_3 = detectCorners(invert(input_image), 10);
-    image_blur_3.exportPNG((std::string)argv[2]);
-    // // Create a new Grayscale object that performs an operation on the input
-    // Grayscale image_edges = (sobelEdgeDetect(image_blur_3));
+    Grayscale histeq = histogramEqualization(input_image);
+    
+    Grayscale image = medianFilter(histeq, 3);
 
-    // // Export the final processed image to the output
-    // image_edges.exportPNG((std::string)argv[2]);
+    image.exportPNG((std::string)argv[2]);
 
     return 0;
 }

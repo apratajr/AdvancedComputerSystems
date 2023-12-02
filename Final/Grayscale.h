@@ -13,6 +13,7 @@
 #include <vector>
 #include <iostream>
 #include <cmath>
+#include <algorithm>
 #include "lodepng.h" // https://github.com/lvandeve/lodepng/tree/master
 
 class Grayscale {
@@ -38,6 +39,7 @@ Grayscale gaussianBlur(const Grayscale& input, const int kernelSize);
 Grayscale meanBlur(const Grayscale& input);
 Grayscale sobelEdgeDetect(const Grayscale& input);
 Grayscale contour(const Grayscale& input);
-Grayscale detectCorners(const Grayscale& inputImage, double threshold);
+Grayscale detectCorners(const Grayscale& input, double threshold);
 Grayscale convolution(const Grayscale& input, const std::vector<std::vector<int>>& kernel);
-
+Grayscale histogramEqualization(Grayscale& input);
+Grayscale medianFilter(const Grayscale& input, int windowSize);

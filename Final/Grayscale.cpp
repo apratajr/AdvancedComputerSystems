@@ -288,62 +288,123 @@ Grayscale convolution(const Grayscale& input, const std::vector<std::vector<int>
 }
 
 // Function to detect corners using the Harris Corner Detector with your Grayscale class
-Grayscale detectCorners(const Grayscale& inputImage, double threshold) {
-    unsigned width = inputImage.getWidth();
-    unsigned height = inputImage.getHeight();
+Grayscale detectCorners(const Grayscale& input, double threshold) {
+    unsigned width = input.getWidth();
+    unsigned height = input.getHeight();
 
-    Grayscale inputGray(width, height);
+    Grayscale input_gray(width, height);
 
     // Convert inputImage to grayscale
     for (unsigned y = 0; y < height; ++y) {
         for (unsigned x = 0; x < width; ++x) {
-            unsigned char pixelValue = inputImage.getPixel(x, y);
-            inputGray.setPixel(x, y, pixelValue);
+            unsigned char pixel_value = input.getPixel(x, y);
+            input_gray.setPixel(x, y, pixel_value);
         }
     }
 
-    Grayscale outputImage(width, height);
+    Grayscale output(width, height);
     Grayscale corners(width, height);
 
     // Harris Corner Detector
     for (unsigned y = 1; y < height - 1; ++y) {
         for (unsigned x = 1; x < width - 1; ++x) {
             // Compute gradients
-            int dx = inputGray.getPixel(x + 1, y) - inputGray.getPixel(x - 1, y);
-            int dy = inputGray.getPixel(x, y + 1) - inputGray.getPixel(x, y - 1);
+            int dx = input_gray.getPixel(x + 1, y) - input_gray.getPixel(x - 1, y);
+            int dy = input_gray.getPixel(x, y + 1) - input_gray.getPixel(x, y - 1);
 
             // Harris Corner Response
-            int cornerResponse = std::abs(dx * dy - 0.04 * (dx + dy) * (dx + dy));
+            int corner_response = std::abs(dx * dy - 0.04 * (dx + dy) * (dx + dy));
 
-            corners.setPixel(x, y, static_cast<unsigned char>(cornerResponse));
+            corners.setPixel(x, y, static_cast<unsigned char>(corner_response));
         }
     }
 
     // Normalize the corner response to [0, 255]
-    unsigned maxResponse = 0;
+    unsigned max_response = 0;
     for (unsigned y = 0; y < height; ++y) {
         for (unsigned x = 0; x < width; ++x) {
-            maxResponse = std::max(maxResponse, static_cast<unsigned>(corners.getPixel(x, y)));
+            max_response = std::max(max_response, static_cast<unsigned>(corners.getPixel(x, y)));
         }
     }
 
     for (unsigned y = 0; y < height; ++y) {
         for (unsigned x = 0; x < width; ++x) {
-            unsigned char normalizedResponse = static_cast<unsigned char>(
-                255 * static_cast<double>(corners.getPixel(x, y)) / static_cast<double>(maxResponse));
+            unsigned char normalized_response = static_cast<unsigned char>(
+                255 * static_cast<double>(corners.getPixel(x, y)) / static_cast<double>(max_response));
 
-            outputImage.setPixel(x, y, normalizedResponse);
+            output.setPixel(x, y, normalized_response);
         }
     }
     // Highlight corners by thresholding
     for (unsigned y = 0; y < height; ++y) {
         for (unsigned x = 0; x < width; ++x) {
             if (corners.getPixel(x, y) > threshold) {
-                outputImage.setPixel(x, y, 255);  // White pixel for corners
+                output.setPixel(x, y, 255);  // White pixel for corners
             } else {
-                outputImage.setPixel(x, y, 0);    // Black pixel otherwise
+                output.setPixel(x, y, 0);    // Black pixel otherwise
             }
         }
     }
-    return outputImage;
+    return output;
+}
+
+// Function to perform histogram equalization on a grayscale image
+Grayscale histogramEqualization(Grayscale& input) {
+    unsigned width = input.getWidth();
+    unsigned height = input.getHeight();
+    Grayscale output(width, height);
+    // Calculate the histogram of the input
+    std::vector<int> histogram(256, 0); // size 256, zeros
+    for (unsigned y = 0; y < height; ++y) {
+        for (unsigned x = 0; x < width; ++x) {
+            histogram[input.getPixel(x, y)]++;
+        }
+    }
+    // Calculate the cumulative distribution function (CDF) of the histogram
+    std::vector<int> cdf(256, 0);   // size 256, zeros
+    cdf[0] = histogram[0];          // Initialize first CDF value
+    for (int i = 1; i < 256; ++i) { // Compute the rest of the CDP by summing histogram
+        cdf[i] = cdf[i - 1] + histogram[i];
+    }
+    // Normalize the CDF (0-255)
+    for (int i = 0; i < 256; ++i) {
+        cdf[i] = static_cast<int>(255.0 * cdf[i] / (width * height));
+    }
+    // Apply histogram equalization to the image
+    for (unsigned y = 0; y < height; ++y) {
+        for (unsigned x = 0; x < width; ++x) {
+            int equalized_value = cdf[input.getPixel(x, y)];
+            output.setPixel(x, y, static_cast<unsigned char>(equalized_value));
+        }
+    }
+    return output;
+}
+
+// Median Filter: Destroys "speck" noise by selecting neighborhood median for center pixel
+Grayscale medianFilter(const Grayscale& input, int windowSize) {
+    unsigned width = input.getWidth();
+    unsigned height = input.getHeight();
+    Grayscale output(width, height);
+    // Iterate over entire input image
+    for (unsigned y = 0; y < height; ++y) {
+        for (unsigned x = 0; x < width; ++x) {
+            std::vector<unsigned char> window_values;
+            // Iterate over a square window (2*windowSize)^2 about each pixel
+            for (int b = -windowSize; b <= windowSize; ++b) {
+                for (int a = -windowSize; a <= windowSize; ++a) {
+                    int nx = x + a;
+                    int ny = y + b;
+                    // Confirm location is within image bounds
+                    if (nx >= 0 && nx < (int)width && ny >= 0 && ny < (int)height) {
+                        // Add each pixel value to the window set
+                        window_values.push_back(input.getPixel(nx, ny));
+                    }
+                }
+            }
+            // Sort the window set, determine median, set output accordingly
+            std::sort(window_values.begin(), window_values.end());
+            output.setPixel(x, y, window_values[window_values.size() / 2]);
+        }
+    }
+    return output;
 }
