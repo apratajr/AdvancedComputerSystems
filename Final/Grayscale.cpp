@@ -13,6 +13,9 @@
 Grayscale::Grayscale(int w, int h) : width(w), height(h) {
     // Allocate memory for the image data
     data = new unsigned char[width * height];
+    // Initialize the data array with zeros
+    // Prevents convolution results from having random memory in border regions
+    std::fill(data, data + width * height, 0);
 }
 
 // Constructor given an existing PNG path
