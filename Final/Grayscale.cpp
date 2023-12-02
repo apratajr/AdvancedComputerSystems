@@ -211,3 +211,40 @@ Grayscale sobelEdgeDetect(const Grayscale& input) {
     }
     return output;
 }
+
+double** generateGaussianKernel(int radius, double stddev) {
+    // Calculate the size of the kernel
+    int size = 2 * radius + 1;
+
+    // Allocate memory for the kernel
+    double** kernel = new double*[size];
+    for (int i = 0; i < size; ++i) {
+        kernel[i] = new double[size];
+    }
+
+    // Calculate the values for the Gaussian kernel
+    double sum = 0;
+    for (int i = -radius; i <= radius; ++i) {
+        for (int j = -radius; j <= radius; ++j) {
+            double value = exp(-(i * i + j * j) / (2 * stddev * stddev));
+            value /= (2 * M_PI * stddev * stddev);
+            kernel[i + radius][j + radius] = value;
+            sum += value;
+        }
+    }
+    for (int x = 0; x < size; x++) {
+        for (int y = 0; y < size; y++) {
+            kernel[x][y] /= sum;
+        }
+    }
+
+    return kernel;
+}
+
+void destroyGaussianKernel(double** kernel, int radius) {
+    int size = 2 * radius + 1;
+    for (int i = 0; i < size; ++i) {
+        delete[] kernel[i];
+    }
+    delete[] kernel;
+}

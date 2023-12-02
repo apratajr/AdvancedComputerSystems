@@ -37,3 +37,5 @@ Grayscale invert(const Grayscale& input);
 Grayscale gaussianBlur(const Grayscale& input);
 Grayscale gaussianBlurStrong(const Grayscale& input);
 Grayscale sobelEdgeDetect(const Grayscale& input);
+double** generateGaussianKernel(int radius, double stddev);
+void destroyGaussianKernel(double** kernel, int radius);
