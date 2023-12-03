@@ -40,3 +40,6 @@ TestEnvironment/P4_Testing/mainmultithreaded.cpp
 TestEnvironment/P4_Testing/mainzlibtest.cpp
 TestEnvironment/P4_Testing/mainzlibtest2.cpp
 TestEnvironment/P4_Testing/test.cpp
+
+# Final Project specific exclusion
+Final/OutputTesting/*.*

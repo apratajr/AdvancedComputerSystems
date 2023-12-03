@@ -37,7 +37,7 @@ public:
 Grayscale invert(const Grayscale& input);
 Grayscale gaussianBlur(const Grayscale& input, const int kernelSize);
 Grayscale meanBlur(const Grayscale& input);
-Grayscale sobelOperator(const Grayscale& input);
+Grayscale sobelOperator(const Grayscale& input, int threshold, bool binary);
 Grayscale laplacianOperator(const Grayscale& input);
 Grayscale detectCorners(const Grayscale& input, double threshold);
 Grayscale convolution(const Grayscale& input, const std::vector<std::vector<int>>& kernel);

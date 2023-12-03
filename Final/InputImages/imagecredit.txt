@@ -4,3 +4,4 @@ logo:      https://upload.wikimedia.org/wikipedia/commons/c/c7/Ford-Motor-Compan
 building:  https://setosa.io/ev/image-kernels/
 car:       https://hips.hearstapps.com/autoweek/assets/s3fs-public/Model%252520A%252520All%252520-%2525201600x900.jpg
 landscape: https://en.wikipedia.org/wiki/Histogram_equalization#/media/File:Unequalized_Hawkes_Bay_NZ.jpg
+city:      https://ars.els-cdn.com/content/image/3-s2.0-B978012374457900007X-f07-06.jpg

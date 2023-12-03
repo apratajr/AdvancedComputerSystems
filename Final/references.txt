@@ -1,0 +1,27 @@
+This is a list of sources I referenced during my learning and research.
+
+If you are interested in learning about image processing from a basic introductory level, start here!
+
+Gaussian Filtration
+https://stackoverflow.com/questions/8204645/implementing-gaussian-blur-how-to-calculate-convolution-matrix-kernel
+https://dsp.stackexchange.com/questions/54375/how-to-approximate-gaussian-kernel-for-image-blur
+https://dsp.stackexchange.com/questions/69891/having-trouble-calculating-the-correct-gaussian-kernel-values-from-the-gaussian
+https://dsp.stackexchange.com/questions/69619/how-to-make-a-gaussian-filter/69625?noredirect=1#comment143998_69625
+https://en.wikipedia.org/wiki/Gaussian_filter
+https://www.researchgate.net/figure/Floating-point-Gaussian-kernel-on-the-left-and-its-discrete-approximation-on-the-right_fig4_325768087
+https://www.researchgate.net/figure/Discrete-approximation-of-the-Gaussian-kernels-3x3-5x5-7x7_fig2_325768087
+https://homepages.inf.ed.ac.uk/rbf/HIPR2/gsmooth.htm
+
+Kernel Based Processing
+https://setosa.io/ev/image-kernels/
+https://www.youtube.com/watch?v=uihBwtPIBxM
+https://www.youtube.com/watch?v=C_zFhWdM4ic
+https://www.youtube.com/watch?v=SiJpkucGa1o
+
+Histogram Equalization
+https://en.wikipedia.org/wiki/Histogram_equalization
+https://www.mathworks.com/help/images/histogram-equalization.html
+https://towardsdatascience.com/histogram-equalization-5d1013626e64
+
+Median Filtration
+https://en.wikipedia.org/wiki/Median_filter

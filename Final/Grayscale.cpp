@@ -187,7 +187,6 @@ Grayscale gaussianBlur(const Grayscale& input, const int kernelSize) {
             output.setPixel(x, y, static_cast<unsigned char>(sum / weightSum));
         }
     }
-
     return output;
 }
 
@@ -245,7 +244,7 @@ Grayscale laplacianOperator(const Grayscale& input) {
 }
 
 // Apply the Sobel Operator
-Grayscale sobelOperator(const Grayscale& input) {
+Grayscale sobelOperator(const Grayscale& input, int threshold, bool binary) {
     unsigned width = input.getWidth();
     unsigned height = input.getHeight();
     Grayscale output(width, height);
@@ -271,8 +270,13 @@ Grayscale sobelOperator(const Grayscale& input) {
             // Magnitude of convolution result (Sobel gradient approximation)
             int mag = (int)sqrt(sum_x * sum_x + sum_y * sum_y);
 
-            output.setPixel(x, y, (mag > 64) ? (int)mag : 0);
-            //output.setPixel(x, y, (int)mag);
+            // Enforce user parameters (binary line detection, thresholding)
+            if (binary) {
+                output.setPixel(x, y, (mag > threshold) ? 255 : 0);
+            }
+            else {
+                output.setPixel(x, y, (mag > threshold) ? (int)mag : 0);
+            }
         }
     }
     return output;
@@ -406,7 +410,7 @@ Grayscale medianFilter(const Grayscale& input, int windowSize) {
     for (unsigned y = 0; y < height; ++y) {
         for (unsigned x = 0; x < width; ++x) {
             std::vector<unsigned char> window_values;
-            // Iterate over a square window (2*windowSize)^2 about each pixel
+            // Iterate over a square window (2*windowSize+1)^2 about each pixel
             for (int b = -windowSize; b <= windowSize; ++b) {
                 for (int a = -windowSize; a <= windowSize; ++a) {
                     int nx = x + a;
